@@ -21,7 +21,7 @@ $(kernel_object_files): build/kernel/%.o : src/impl/kernel/%.cpp
 
 $(x86_64_cxx_object_files): build/x86_64/%.o : src/impl/x86_64/%.cpp
 	mkdir -p $(dir $@) && \
-	$(COMPILER_CXX) -c -I src/interface -ffreestanding $(patsubst build/x86_64/%.o, src/impl/x86_64/%.cpp, $@) -o $@
+	$(COMPILER_CXX) -c -I src/interface -I src/impl/x86_64/boot -ffreestanding $(patsubst build/x86_64/%.o, src/impl/x86_64/%.cpp, $@) -o $@
 
 $(x86_64_asm_object_files): build/x86_64/%.o : src/impl/x86_64/%.asm
 	mkdir -p $(dir $@) && \
