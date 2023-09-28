@@ -1,22 +1,32 @@
 #include "interrupts.hpp"
 
-void load_idt_entry(uint8_t const isr_number, unsigned long /*ulong*/ const base, uint16_t const selector, uint8_t const flags) {
-    // First two bits of Entry
-    interrupt_data_table[isr_number].offset_lowerbits = (base & 0xFFFF);
-    // Second two bits of Entry
-    interrupt_data_table[isr_number].offset_higherbits = ((base >> 16) & 0xFFFF);
-    interrupt_data_table[isr_number].selector = selector;
-    interrupt_data_table[isr_number].flags = flags;
-    interrupt_data_table[isr_number].zero = 0;
+interrupt_controller::interrupt_controller() {
+
 }
 
-void initialize_itd_pointer() {
+void interrupt_controller::load_idt_entry(uint8_t const isr_number, unsigned long /*ulong*/ const base, uint16_t const selector, uint8_t const flags) {
+    print_str("Loaded IDT Entry with the Number: ");
+    char buffer[3];
+    itoa(isr_number, buffer);
+    print_str(buffer);
+    print_str("\n");
+    interrupt_data_table[isr_number].offset_lowerbits = (base & 0xFFFF);
+    interrupt_data_table[isr_number].offset_midbits = ((base >> 16) & 0xFFFF);
+    interrupt_data_table[isr_number].offset_higherbits = ((base >> 32) & 0xFFFFFFFF);
+    interrupt_data_table[isr_number].selector = selector;
+    interrupt_data_table[isr_number].flags = flags;
+    interrupt_data_table[isr_number].always_zero_1 = 0;
+    interrupt_data_table[isr_number].always_zero_2 = 0;
+}
+
+void interrupt_controller::initialize_itd_pointer() {
     // Set to the maximum Address of the IDT 
     interrupt_data_table_ptr.limit = (sizeof(interrupt_data_table_entry) * INTERRUPT_DATA_TABLE_SIZE) - 1;
+    // Set to the base of the Interrupt Data Table
     interrupt_data_table_ptr.base = (uint64_t) &interrupt_data_table;
 }   
 
-void initialize_pic() {
+void interrupt_controller::initialize_pic() {
     /*
      *  Send Command Word ICW1 --> Beginn Initialization
      *  Send 0x11 to PIC_1_Controll on 0x20 and to PIC_2_Controll (0xA0)
@@ -53,8 +63,39 @@ void initialize_pic() {
     outb(0xA1, 0xFF);
 }
 
-void init_interrupt_data_table() {
+void interrupt_controller::init_interrupt_data_table() {
     initialize_pic();
     initialize_itd_pointer();
-    load_interrupt_data_table(&interrupt_data_table_ptr);
+    //load_interrupt_data_table(&interrupt_data_table_ptr);
+    this->load_idt_cpp();
+}
+
+void interrupt_controller::load_idt_cpp() {
+    // 80 Bit integer
+    uint8_t value[10];
+
+    // 16 Bit IDT size.
+    *reinterpret_cast<uint16_t*>(value) = (sizeof(interrupt_data_table_entry) * INTERRUPT_DATA_TABLE_SIZE) - 1;
+
+    // 64 Bit pointer to the IDT.
+    *reinterpret_cast<uint64_t*>(&reinterpret_cast<uint16_t*>(value)[1]) = reinterpret_cast<uint64_t>(interrupt_data_table);
+
+    // Load the IDT in inline assembly.
+    asm volatile(
+        "lidt %0"
+        :
+        : "m" (value)
+    );
+}
+
+void interrupt_controller::enable_interrupts() const {
+    asm volatile(
+        "sti"
+    );
+}
+
+void interrupt_controller::disable_interrupts() const {
+    asm volatile(
+        "sti"
+    );
 }

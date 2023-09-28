@@ -21,18 +21,14 @@ long_mode_start:
     hlt
 
 keyboard_handler_interrupt:
-	mov dword [0xb8000], 0x4f524f45
-	mov dword [0xb8004], 0x4f3a4f52
-	mov dword [0xb8008], 0x4f204f20
-	mov byte  [0xb800a], al
 	pushaq
 	cld
 	call keyboad_handler_isr
 	popaq
-	iretd
+	iretq
 
 load_interrupt_data_table:
-	mov edx, [esp + 4]
+	mov edx, [rsp + 8]
 	lidt [edx]
 	sti
 	ret

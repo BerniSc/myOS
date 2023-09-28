@@ -12,12 +12,15 @@ void keyboard_init() {
 
 extern "C" void keyboad_handler_isr() {
     signed char keycode;
-    print_char('a');
 
     keycode = inb(0x60);
 
     if(keycode >= 0) {
-        print_char('a');
+        print_str("Recieved Key with KeyCode: ");
+        char buffer[2];
+        itoa(keycode, buffer);
+        print_str(buffer);
+        print_char('\n');
     }
 
     outb(0x20, 0x20);
@@ -26,10 +29,14 @@ extern "C" void keyboad_handler_isr() {
 extern "C" void kernel_main() {
     print_clear();
 
-    init_interrupt_data_table();
-    //ORIGINAL load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
-    load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x30, 0x8E);
+    interrupt_controller intc;
+
+    intc.init_interrupt_data_table();
+    //ORIGINAL 
+    intc.load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
     keyboard_init();
+
+    intc.enable_interrupts();
 
     //CursorController::disableCursor();
     CursorController::updateCursorPosition(0,3);
