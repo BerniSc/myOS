@@ -18,6 +18,7 @@ uint32_t digit_count(int num) {
     return count;
 }
 
+// Converting chars into Strings
 void itoa(uint8_t num, char *number) {
     int dgcount = digit_count(num);
     int index = dgcount - 1;
@@ -35,3 +36,19 @@ void itoa(uint8_t num, char *number) {
         number[dgcount] = '\0';
     }
 }
+
+// Function for reversing a string destructivly in place
+void reverse(char* str, uint32_t length) {
+    uint32_t start = 0;
+    uint32_t end = length - 1;
+
+    while(start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+
+        start++;
+        end--;
+    }
+}
+

@@ -1,3 +1,4 @@
+#include "io.hpp"
 #include "print.hpp"
 #include "cursor.hpp"
 #include "utils.hpp"
@@ -27,7 +28,7 @@ extern "C" void keyboad_handler_isr() {
 }
 
 extern "C" void kernel_main() {
-    print_clear();
+    io::my_cout.my_ostream_init();
 
     interrupt_controller intc;
 
@@ -38,10 +39,24 @@ extern "C" void kernel_main() {
 
     intc.enable_interrupts();
 
+    //io::my_ostream my_cout;
+
+    //my_cout(io::COLOUR_GREEN, io::COLOUR_WHITE);
+    //my_cout << "Hi";
+
+    io::my_cout(io::COLOUR_MAGENTA);
+    io::my_cout << "haaaa" << io::OSTREAM_APPEND::endl;
+    io::my_cout << io::OSTREAM_APPEND::clear;
+    io::my_cout << "hi";
+    //io::my_cout << int32_t(1234) << "   " << uint8_t(87); 
+    //io::my_cout << uint16_t(4321);
+    //io::my_cout << uint32_t(12345);
+    //io::my_cout << uint64_t(432);
+
     //CursorController::disableCursor();
     CursorController::updateCursorPosition(0,3);
-    print_set_color(PRINT_COLOR_GREEN, PRINT_COLOR_BLACK);
-    print_str("Welcome to our 64-bit kernel!\n");
+    //print_set_color(PRINT_COLOR_GREEN, PRINT_COLOR_BLACK);
+    //print_str("Welcome to our 64-bit kernel!\n");
     //char buffer[10];
     //itoa(CursorController::getCursorX(CursorController::getCursorPosition()), buffer);
     //print_str(buffer);
