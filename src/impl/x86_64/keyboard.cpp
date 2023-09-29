@@ -1,19 +1,23 @@
 #include "keyboard.hpp"
 
 extern "C" void keyboad_handler_isr() {
-    char keycode;
+    char keycode = inb(KEYBOARD_DATA_PORT);
 
+    // The Current Modfiers
     static uint8_t escape = 0;
     static uint8_t ctrl = 0;
     static uint8_t shift = 0;
     static uint8_t alt = 0;
 
-    keycode = inb(0x60);
+    // Is the current Keycode from a Keyevent beeing released or from it beeing pressed
+    io::my_cout << "Released? " << bool(keycode & SCAN_CODE_RELEASE) << "\n";
 
     if(keycode >= 0) {
+        // For now let the Recieved Key always be printed as UPPER CASE
         io::my_cout << keyboard_driver::get_ascii_upper(keycode);
     }
 
+    // Clear the Pending Interrupt
     outb(0x20, 0x20);
 }
 

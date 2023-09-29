@@ -1,12 +1,13 @@
 #ifndef KEYS_HPP
 #define KEYS_HPP
 
-namespace keycode {
+namespace keycode_lout {
     
     #define KEYBOARD_DATA_PORT          0x60
     #define KEYBOARD_STATUS_PORT        0x64
     #define KEYBOARD_COMMAND_PORT       0x64
 
+    #define SCAN_CODE_RELEASE           0x80
 
     #define SCAN_CODE_KEY_ESC           0x01
     #define SCAN_CODE_KEY_1             0x02
