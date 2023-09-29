@@ -6,6 +6,7 @@
 #include "assembly_inline.hpp"
 #include "utils.hpp"
 #include "print.hpp"
+#include "io.hpp"
 
 // TODO Move to config?
 #define INTERRUPT_DATA_TABLE_SIZE   256

@@ -5,11 +5,12 @@ interrupt_controller::interrupt_controller() {
 }
 
 void interrupt_controller::load_idt_entry(uint8_t const isr_number, unsigned long /*ulong*/ const base, uint16_t const selector, uint8_t const flags) {
-    print_str("Loaded IDT Entry with the Number: ");
-    char buffer[3];
-    itoa(isr_number, buffer);
-    print_str(buffer);
-    print_str("\n");
+    //print_str("Loaded IDT Entry with the Number: ");
+    //char buffer[3];
+    //itoa(isr_number, buffer);
+    //print_str(buffer);
+    //print_str("\n");
+    io::my_cout << "Loaded IDT Entry with the Number " << isr_number << "\n";
     interrupt_data_table[isr_number].offset_lowerbits = (base & 0xFFFF);
     interrupt_data_table[isr_number].offset_midbits = ((base >> 16) & 0xFFFF);
     interrupt_data_table[isr_number].offset_higherbits = ((base >> 32) & 0xFFFFFFFF);
@@ -71,20 +72,11 @@ void interrupt_controller::init_interrupt_data_table() {
 }
 
 void interrupt_controller::load_idt_cpp() {
-    // 80 Bit integer
-    uint8_t value[10];
-
-    // 16 Bit IDT size.
-    *reinterpret_cast<uint16_t*>(value) = (sizeof(interrupt_data_table_entry) * INTERRUPT_DATA_TABLE_SIZE) - 1;
-
-    // 64 Bit pointer to the IDT.
-    *reinterpret_cast<uint64_t*>(&reinterpret_cast<uint16_t*>(value)[1]) = reinterpret_cast<uint64_t>(interrupt_data_table);
-
     // Load the IDT in inline assembly.
     asm volatile(
         "lidt %0"
         :
-        : "m" (value)
+        : "m" (interrupt_data_table_ptr)
     );
 }
 

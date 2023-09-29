@@ -80,6 +80,15 @@ void io::my_ostream::intern_print_set_color(uint8_t foreground, uint8_t backgrou
  *                              OStream Implementations
  **************************************************************************************/
 
+vga_char* io::my_ostream::vga_buffer = reinterpret_cast<vga_char*>(0xb8000);
+
+io::VGA_COLOUR io::my_ostream::colour_fg = io::COLOUR_WHITE;
+io::VGA_COLOUR io::my_ostream::colour_bg = io::COLOUR_BLACK;
+
+// Current Position of "Pointer" in VGA Memory
+size_t io::my_ostream::current_col = 0;
+size_t io::my_ostream::current_row = 0;
+
 void io::my_ostream::my_ostream_init() {
     vga_buffer = reinterpret_cast<vga_char*>(0xb8000);
 

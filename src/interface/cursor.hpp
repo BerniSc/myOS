@@ -14,6 +14,8 @@
 #include "assembly_inline.hpp"
 #include "common_config.hpp"
 
+#include "io.hpp"
+
 struct CursorController {
     public:
         // Disable the Blinking Keyboard Cursor

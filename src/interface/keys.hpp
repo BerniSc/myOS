@@ -28,7 +28,7 @@ namespace keycode {
     #define SCAN_CODE_KEY_E             0x12
     #define SCAN_CODE_KEY_R             0x13
     #define SCAN_CODE_KEY_T             0x14
-    #define SCAN_CODE_KEY_Y             0x15
+    #define SCAN_CODE_KEY_Z             0x15
     #define SCAN_CODE_KEY_U             0x16
     #define SCAN_CODE_KEY_I             0x17
     #define SCAN_CODE_KEY_O             0x18
@@ -51,7 +51,7 @@ namespace keycode {
     #define SCAN_CODE_KEY_ACUTE         0x29
     #define SCAN_CODE_KEY_LEFT_SHIFT    0x2A
     #define SCAN_CODE_KEY_BACKSLASH     0x2B
-    #define SCAN_CODE_KEY_Z             0x2C
+    #define SCAN_CODE_KEY_Y             0x2C
     #define SCAN_CODE_KEY_X             0x2D
     #define SCAN_CODE_KEY_C             0x2E
     #define SCAN_CODE_KEY_V             0x2F

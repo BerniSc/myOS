@@ -45,14 +45,14 @@ namespace io {
     // Own Implementation of ostream
     struct my_ostream {
         private:
-            vga_char* vga_buffer;
+            static vga_char* vga_buffer;
 
-            VGA_COLOUR colour_fg;
-            VGA_COLOUR colour_bg;
+            static VGA_COLOUR colour_fg;
+            static VGA_COLOUR colour_bg;
 
             // Current Position of "Pointer" in VGA Memory
-            size_t current_col;
-            size_t current_row;
+            static size_t current_col;
+            static size_t current_row;
 
             // Internal Functions for Accessing Video Memory
             void intern_clear_row(size_t row);
@@ -81,7 +81,8 @@ namespace io {
     };
 
     // TODO Somehow this Does not Work only through the Constructor as it seems to not call the Constructor
-    // For now this issue is solved by calling the Init Function in the kernelmain
+    // For now this issue is solved by calling the Init Function in the kernelmain to Reset and by Setting the Parameters as Static and 
+    // then initializing them in the .cpp 
     static my_ostream my_cout;
 
     // Own Implementation of istream
