@@ -16,6 +16,7 @@
 
 #include "io.hpp"
 
+// Purely Static Instance
 struct CursorController {
     public:
         // Disable the Blinking Keyboard Cursor

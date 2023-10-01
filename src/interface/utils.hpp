@@ -7,11 +7,11 @@ extern uint32_t strlen(const char* string);
 extern uint32_t digit_count(int number);
 
 extern void itoa(uint8_t number, char* buffer);
-//extern void itoa(uint64_t number, char* buffer);
-
 
 // Function for reversing a string destructivly in place
 extern void reverse(char* str, uint32_t length);
+
+bool string_comp(const char* string1, const char* string2);
 
 /******************************************************************************************
  *

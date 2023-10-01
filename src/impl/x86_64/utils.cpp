@@ -52,3 +52,15 @@ void reverse(char* str, uint32_t length) {
     }
 }
 
+bool string_comp(const char* string1, const char* string2) {
+    while(*string1 != '\0' && *string2 != '\0') {
+        if(*string1 != *string2) {
+            return false;
+        }
+        string1++;
+        string2++;
+    }
+
+    // Check if both Strings have reached their end
+    return (*string1 == '\0' && *string2 == '\0');
+}

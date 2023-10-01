@@ -36,6 +36,19 @@ extern "C" void kernel_main() {
 
     io::my_cout << "Welcome to my 64-bit kernel!" << io::OSTREAM_APPEND::endl;
 
+    char buffer_disableCursor[32];
+    io::my_cout << "Would you Like to have the Cursor enabled? yes/no" << io::OSTREAM_APPEND::endl;
+    while(true) {
+        io::my_cin >> buffer_disableCursor;
+        if(string_comp(buffer_disableCursor, "yes")) {
+            break;
+        } else if(string_comp(buffer_disableCursor, "no")) {
+            CursorController::disableCursor();
+            break;
+        } 
+        io::my_cout << "What are you trying to Say? ";
+    }
+
     //CursorController::disableCursor();
 
     //CursorController::updateCursorPosition(0,3);
