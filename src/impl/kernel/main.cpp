@@ -41,7 +41,9 @@ extern "C" void kernel_main() {
     
     char buffer[12];
     io::my_cin.operator>>(buffer);
-    io::my_cout << "You have entered " << buffer; 
+    io::my_cout << "You have entered " << buffer << '\n'; 
+    io::my_cin >> buffer;
+    io::my_cout << "Entered: " << buffer << '\n';
 
     while(true) __asm__("hlt\n\t");
 }

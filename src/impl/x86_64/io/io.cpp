@@ -157,18 +157,21 @@ io::my_ostream& io::my_ostream::operator()(VGA_COLOUR colour_foreground, VGA_COL
  *                              IStream Implementations
  **************************************************************************************/
 
+// Store the current "Buffer Position", i.e. the Current Index on which the IStream Writes into the Buffer
 uint8_t io::my_istream::buffer_pos = 0;
+// The Termination Character, which ends the Current input from the istream into the Buffer
 char io::my_istream::termination_character ='\n';
+// Stores the Character that has been recieved via the Keyboard.
 char io::my_istream::recieved_character = '\0';
+// Is set when a new Character has been registered and reseted when it has been processed
 bool io::my_istream::has_recieved = false;
 
 void io::my_istream::operator<<(char character) {
-    io::my_istream::recieved_character = character;
-    io::my_istream::has_recieved = true;
+    this->recieved_character = character;
+    this->has_recieved = true;
 }
 
 void io::my_istream::reset_buffer_pos() {
-    io::my_cout << "Reseted Buffer\n";
     this->buffer_pos = 0;
 }
 
@@ -177,15 +180,17 @@ void io::my_istream::reset_recieved_character() {
 }
 
 io::my_istream& io::my_istream::operator>>(char string_buffer[12]) {
-    while(this->buffer_pos < CIN_BUFFER_LENGTH && this->recieved_character != this->termination_character) {
-        while(this->has_recieved) {
+    // Operation should be Thread-Blocking -> Therefore While Loop 
+    // TODO Maybe allow for STRG-C to Quit?
+    while((this->buffer_pos < (CIN_BUFFER_LENGTH - 1)) && (this->recieved_character != this->termination_character)) { 
+        if(this->has_recieved) {
             this->has_recieved = false;
-            io::my_cout << "PRinting this..." << this->recieved_character << "\n";
             string_buffer[this->buffer_pos++] = this->recieved_character;
-            io::my_cout << "Cur Buffer: " << string_buffer << "\n";
         }
     }
-
-    this->reset_buffer_pos();
+    // Correctly terminate the String
+    string_buffer[this->buffer_pos] = '\0';
+    // Reset the last recieved Character to Default and the Buffer Position for next cin operation
     this->reset_recieved_character();
+    this->reset_buffer_pos();
 }
