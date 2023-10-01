@@ -6,16 +6,26 @@
 
 #include "interrupts.hpp"
 
+/*************************************************************************************
+ * 
+ *         Definition of the Global Variables that are Used by the Kernel
+ * 
+ *************************************************************************************/
+keyboard_driver my_keyboard_driver;
+
+
 extern "C" void kernel_main() {
     interrupt_controller intc;
-    keyboard_driver kbd;
+    //keyboard_driver my_keyboard_driver;
     io::my_cout(io::COLOUR_LIGHT_BLUE);
+
+    //my_keyboard_driver.set_silent(true);
 
     intc.init_interrupt_data_table();
     // Load the Keyboard Interrupt Handler with its ISR-Number, the "Pointer" to the ASM Handler, its Code Segment and its Flags into the IDT  
     intc.load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
     // After Connecting the ISR to the Handler the Keyboard Interrupt can be Activated    
-    kbd.keyboard_init();
+    my_keyboard_driver.keyboard_init();
 
     io::my_cout(io::COLOUR_GREEN);
     intc.enable_interrupts();
@@ -28,6 +38,10 @@ extern "C" void kernel_main() {
     //CursorController::updateCursorPosition(0,3);
 
     //CursorController::enableCursor(2,3);
+    
+    char buffer[12];
+    io::my_cin.operator>>(buffer);
+    io::my_cout << "You have entered " << buffer; 
 
     while(true) __asm__("hlt\n\t");
 }

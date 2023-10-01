@@ -152,3 +152,40 @@ io::my_ostream& io::my_ostream::operator()(VGA_COLOUR colour_foreground, VGA_COL
     intern_print_set_color(this->colour_fg = colour_foreground, this->colour_bg = colour_background);
     return *this;
 }
+
+/**************************************************************************************
+ *                              IStream Implementations
+ **************************************************************************************/
+
+uint8_t io::my_istream::buffer_pos = 0;
+char io::my_istream::termination_character ='\n';
+char io::my_istream::recieved_character = '\0';
+bool io::my_istream::has_recieved = false;
+
+void io::my_istream::operator<<(char character) {
+    io::my_istream::recieved_character = character;
+    io::my_istream::has_recieved = true;
+}
+
+void io::my_istream::reset_buffer_pos() {
+    io::my_cout << "Reseted Buffer\n";
+    this->buffer_pos = 0;
+}
+
+void io::my_istream::reset_recieved_character() {
+    this->recieved_character = '\0';
+}
+
+io::my_istream& io::my_istream::operator>>(char string_buffer[12]) {
+    while(this->buffer_pos < CIN_BUFFER_LENGTH && this->recieved_character != this->termination_character) {
+        while(this->has_recieved) {
+            this->has_recieved = false;
+            io::my_cout << "PRinting this..." << this->recieved_character << "\n";
+            string_buffer[this->buffer_pos++] = this->recieved_character;
+            io::my_cout << "Cur Buffer: " << string_buffer << "\n";
+        }
+    }
+
+    this->reset_buffer_pos();
+    this->reset_recieved_character();
+}

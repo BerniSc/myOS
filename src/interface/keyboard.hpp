@@ -15,10 +15,20 @@ extern "C" void keyboad_handler_isr();
 extern "C" void keyboard_handler_interrupt();
 
 struct keyboard_driver {
-    void keyboard_init();
+    private:
+        static bool silent_mode;
+    
+    public:
+        void keyboard_init();
 
-    static char get_ascii_lower(uint8_t keycode);
-    static char get_ascii_upper(uint8_t keycode);
+        // Sets the Silent Mode for the Keyboard (Are Keypresses displayed or visually supressed)
+        void set_silent(bool silent);
+        bool get_silent() const;
+
+        static char get_ascii_lower(uint8_t keycode);
+        static char get_ascii_upper(uint8_t keycode);
 };
+
+extern keyboard_driver my_keyboard_driver;
 
 #endif

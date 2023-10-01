@@ -10,22 +10,36 @@ extern "C" void keyboad_handler_isr() {
     static uint8_t alt = 0;
 
     // Is the current Keycode from a Keyevent beeing released or from it beeing pressed
-    io::my_cout << "Released? " << bool(keycode & SCAN_CODE_RELEASE) << "\n";
+    //io::my_cout << "Released? " << bool(keycode & SCAN_CODE_RELEASE) << "\n";
 
     if(keycode >= 0) {
         // For now let the Recieved Key always be printed as UPPER CASE
-        io::my_cout << keyboard_driver::get_ascii_upper(keycode);
+        if(!my_keyboard_driver.get_silent()) io::my_cout << keyboard_driver::get_ascii_upper(keycode);
+        io::my_cin << keyboard_driver::get_ascii_upper(keycode);
     }
+
 
     // Clear the Pending Interrupt
     outb(0x20, 0x20);
 }
+
+bool keyboard_driver::silent_mode = false;
 
 void keyboard_driver::keyboard_init() {
     uint8_t curent_mask_master = inb(0x21);
     outb(0x21, curent_mask_master & 0xFD);
     io::my_cout << "Initialized Keyboard" << io::OSTREAM_APPEND::endl;
 }
+
+// Getters and Setters for the Silent Variable
+bool keyboard_driver::get_silent() const {
+    return this->silent_mode;
+}
+
+void keyboard_driver::set_silent(bool silent) {
+    this->silent_mode = silent;
+}
+
 
 char keyboard_driver::get_ascii_lower(uint8_t keycode){
 

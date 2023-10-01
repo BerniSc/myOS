@@ -13,6 +13,8 @@ struct vga_char {
     uint8_t color;
 };
 
+#define CIN_BUFFER_LENGTH 12
+
 namespace io {
     // Lenght and Height of VGA Terminal
     constexpr static size_t NUM_COLS = 80;
@@ -86,9 +88,29 @@ namespace io {
     static my_ostream my_cout;
 
     // Own Implementation of istream
-    struct my_cin {
+    struct my_istream {
+        private:
+            static uint8_t buffer_pos; 
+            
+            static char recieved_character;
+            static char termination_character;
+            static bool has_recieved;
 
+            void reset_buffer_pos();
+            void reset_recieved_character();
+
+            // Let the Keyboard driver access the Private Functions (i.e. operator<<()) of this Class
+            friend class keyboard_driver;
+        public:
+            //sadly not yet Safe. For now it is assumend that this function is calld with a Char buffer with the size of at least CIN_BUFFER_LENGTH
+            // The Other bits are disregarded. Otherwise there WILL BE AN UNCOMFORTABLE MEMORY EXCEPTION -->> TODO
+            my_istream& operator>>(char string_buffer[12]);
+
+            // Sadly for now has to be PUBLIC as ISR is not yet a Member function -> Must be accessible globaly TODO
+            void operator<<(char character);
     };
+
+    static my_istream my_cin;
 }
 
 #endif
