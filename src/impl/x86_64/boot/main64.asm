@@ -6,6 +6,35 @@ extern keyboad_handler_isr
 global load_interrupt_data_table
 global keyboard_handler_interrupt
 
+;   =====================================================================================
+;   MACRO Defintions
+;   =====================================================================================
+%macro pushaq 0
+    push rax
+    push rcx
+    push rdx
+    push rbx
+    push rsp
+    push rbp
+    push rsi
+    push rdi
+%endm ; pushaq
+
+%macro popaq 0
+    pop rdi
+    pop rsi
+    pop rbp
+    pop rsp
+    pop rbx
+    pop rdx
+    pop rcx
+    pop rax
+%endm ; popaq
+
+;   =====================================================================================
+;   Code Section
+;   =====================================================================================
+
 section .text
 bits 64
 long_mode_start:
@@ -33,29 +62,16 @@ load_interrupt_data_table:
 	sti
 	ret
 
-
 ;   =====================================================================================
-;
-;   MACRO Defintions
-;
+;   NORMAL INTERRUPT SERVICE ROUTINES Defintions
 ;   =====================================================================================
+    
+global division_zero_handler_interrupt
+extern div_zero_exception_handler_isr
 
-%macro pushaq 0
-    push %rax
-    push %rcx
-    push %rdx
-    push %rbx
-    push %rbp
-    push %rsi
-    push %rdi
-%endm ; pushaq
-
-%macro popaq 0
-    pop %rdi
-    pop %rsi
-    pop %rbp
-    pop %rbx
-    pop %rdx
-    pop %rcx
-    pop %rax
-%endm ; popaq
+division_zero_handler_interrupt:
+    pushaq
+    cld
+    call div_zero_exception_handler_isr
+    popaq
+	iretq

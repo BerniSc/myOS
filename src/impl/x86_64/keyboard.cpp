@@ -20,6 +20,7 @@ extern "C" void keyboad_handler_isr() {
             case SCAN_CODE_KEY_RIGHT_SHIFT:
                 shift = 0;
                 break;
+            
         }
     } else if(keycode == SCAN_CODE_KEY_ENTER) {
         io::my_cout << '\n';

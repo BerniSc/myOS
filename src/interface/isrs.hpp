@@ -3,6 +3,14 @@
 
 // A Collection/Interface of the Interupt Service Routines used by the Kernel
 
+#include "io.hpp"
+#include "assembly_inline.hpp"
+
+extern "C" void keyboad_handler_isr();
+
+extern "C" void keyboard_handler_interrupt();
+extern "C" void division_zero_handler_interrupt();
+
 extern "C" 
 {
     extern void ASM_ISR_0(void);
