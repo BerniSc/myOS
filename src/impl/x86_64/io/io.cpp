@@ -25,28 +25,28 @@ void io::my_ostream::intern_print_clear() {
 void io::my_ostream::intern_print_newline() {
     current_col = 0;
 
-    if (current_row < io::NUM_ROWS - 1) {
+    if(current_row < io::NUM_ROWS - 1) {
         current_row++;
         return;
     }
 
-    for (size_t row = 1; row < io::NUM_ROWS; row++) {
-        for (size_t col = 0; col < io::NUM_COLS; col++) {
+    for(size_t row = 1; row < io::NUM_ROWS; row++) {
+        for(size_t col = 0; col < io::NUM_COLS; col++) {
             vga_char character = vga_buffer[col + io::NUM_COLS * row];
             vga_buffer[col + io::NUM_COLS * (row - 1)] = character;
         }
     }
 
-    intern_clear_row(io::NUM_COLS - 1);
+    intern_clear_row(io::NUM_ROWS - 1);
 }
 
 void io::my_ostream::intern_print_char(char character) {
-    if (character == '\n') {
+    if(character == '\n') {
         intern_print_newline();
         return;
     }
 
-    if (current_col > io::NUM_COLS) {
+    if(current_col > io::NUM_COLS) {
         intern_print_newline();
     }
 
@@ -59,7 +59,7 @@ void io::my_ostream::intern_print_char(char character) {
 }
 
 void io::my_ostream::intern_print_str(char* str) {
-    for (size_t i = 0; 1; i++) {
+    for(size_t i = 0; 1; i++) {
         char character = (uint8_t) str[i];
 
         if (character == '\0') {
@@ -177,15 +177,20 @@ void io::my_istream::reset_buffer_pos() {
 
 void io::my_istream::reset_recieved_character() {
     this->recieved_character = '\0';
+    this->has_recieved = false;
 }
 
 io::my_istream& io::my_istream::operator>>(char string_buffer[12]) {
     // Operation should be Thread-Blocking -> Therefore While Loop 
     // TODO Maybe allow for STRG-C to Quit?
+    for(int i = 0; i < 11; i++) string_buffer[i] = ' ';
+    string_buffer[11] = '\0';
+
     while((this->buffer_pos < (CIN_BUFFER_LENGTH - 1)) && (this->recieved_character != this->termination_character)) { 
         if(this->has_recieved) {
             this->has_recieved = false;
             string_buffer[this->buffer_pos++] = this->recieved_character;
+            //io::my_cout << "recieved Character: " << uint8_t(recieved_character) << "    Buffer: " << string_buffer << "\n";
         }
     }
     // Correctly terminate the String

@@ -39,7 +39,6 @@ extern "C" void keyboad_handler_isr() {
         io::my_cin << keycode_letter;
     }
 
-
     // Clear the Pending Interrupt
     outb(0x20, 0x20);
 }

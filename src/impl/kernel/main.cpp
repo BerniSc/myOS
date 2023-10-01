@@ -50,7 +50,6 @@ extern "C" void kernel_main() {
     for(int i = 0; i < 10; i++) {
         io::my_cin >> buffer;
         io::my_cout << "Entered: " << buffer << '\n';
-        for(int i = 0; i < 12; i++) buffer[i] = ' ';
     }
 
     while(true) __asm__("hlt\n\t");
