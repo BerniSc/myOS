@@ -36,7 +36,7 @@ extern "C" void kernel_main() {
 
     io::my_cout << "Welcome to my 64-bit kernel!" << io::OSTREAM_APPEND::endl;
 
-    CursorController::disableCursor();
+    //CursorController::disableCursor();
 
     //CursorController::updateCursorPosition(0,3);
 
@@ -48,8 +48,9 @@ extern "C" void kernel_main() {
     io::my_cin >> buffer;
     io::my_cout << "Entered: " << buffer << '\n';
     for(int i = 0; i < 10; i++) {
-        io::my_cin >> buffer;
-        io::my_cout << "Entered: " << buffer << '\n';
+        char buffer_2[12];
+        io::my_cin >> buffer_2;
+        io::my_cout << "Entered: " << buffer_2 << '\n';
     }
 
     while(true) __asm__("hlt\n\t");

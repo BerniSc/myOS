@@ -6,6 +6,7 @@
 
 #include "print.hpp"
 #include "utils.hpp"
+#include "cursor.hpp"
 
 // Struct Definition for the VGA Character
 struct vga_char {

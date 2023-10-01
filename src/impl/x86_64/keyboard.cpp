@@ -25,6 +25,8 @@ extern "C" void keyboad_handler_isr() {
     } else if(keycode == SCAN_CODE_KEY_ENTER) {
         io::my_cout << '\n';
         io::my_cin << '\n';
+    } else if(keycode == SCAN_CODE_KEY_TAB) {
+        io::my_cin << '\t';
     } else if(keycode == SCAN_CODE_KEY_LEFT_SHIFT || keycode == SCAN_CODE_KEY_RIGHT_SHIFT) {
         shift = 1;
     } else {

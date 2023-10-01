@@ -43,6 +43,7 @@ void io::my_ostream::intern_print_newline() {
 void io::my_ostream::intern_print_char(char character) {
     if(character == '\n') {
         intern_print_newline();
+        CursorController::updateCursorPosition(this->current_col, this->current_row);
         return;
     }
 
@@ -56,6 +57,8 @@ void io::my_ostream::intern_print_char(char character) {
     };
 
     current_col++;
+
+    CursorController::updateCursorPosition(this->current_col, this->current_row);
 }
 
 void io::my_ostream::intern_print_str(char* str) {
@@ -142,6 +145,7 @@ io::my_ostream& io::my_ostream::operator<<(uint64_t integer) {
 io::my_ostream& io::my_ostream::operator<<(OSTREAM_APPEND os_append) {
     if(os_append == io::OSTREAM_APPEND::endl) {
         intern_print_newline();
+        CursorController::updateCursorPosition(this->current_col, this->current_row);
     } else if(os_append == io::OSTREAM_APPEND::clear) {
         intern_print_clear();
     }
@@ -183,11 +187,9 @@ void io::my_istream::reset_recieved_character() {
 io::my_istream& io::my_istream::operator>>(char string_buffer[12]) {
     // Operation should be Thread-Blocking -> Therefore While Loop 
     // TODO Maybe allow for STRG-C to Quit?
-    for(int i = 0; i < 11; i++) string_buffer[i] = ' ';
-    string_buffer[11] = '\0';
 
     while((this->buffer_pos < (CIN_BUFFER_LENGTH - 1)) && (this->recieved_character != this->termination_character)) { 
-        if(this->has_recieved) {
+        if(this->has_recieved && this->recieved_character != this->termination_character) {
             this->has_recieved = false;
             string_buffer[this->buffer_pos++] = this->recieved_character;
             //io::my_cout << "recieved Character: " << uint8_t(recieved_character) << "    Buffer: " << string_buffer << "\n";
