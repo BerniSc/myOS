@@ -13,4 +13,9 @@ SECTIONS
 	{
 		*(.text)
 	}
+
+	.heap :
+	{
+		*(.heap)
+	}
 }

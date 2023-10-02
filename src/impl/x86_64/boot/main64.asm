@@ -51,6 +51,12 @@ global keyboard_handler_interrupt
 ;   Code Section
 ;   =====================================================================================
 
+section .heap
+bits 64
+heap_start:         ; Startlable for Heap
+    resb 4096 * 4   ; Reserve 16KB for the heap
+heap_end:           ; Endlable for Heap
+
 section .text
 bits 64
 long_mode_start:
