@@ -11,7 +11,9 @@
 
 #include "print.hpp"
 
+// Interface to the C++ Handler Function
 extern "C" void keyboad_handler_isr();
+// Interface to the ASM Handler
 extern "C" void keyboard_handler_interrupt();
 
 struct keyboard_driver {

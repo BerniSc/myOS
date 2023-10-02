@@ -14,46 +14,59 @@
  * 
  *************************************************************************************/
 keyboard_driver my_keyboard_driver;
+interrupt_controller my_interrupt_ctl;
 
 
 extern "C" void kernel_main() {
-    interrupt_controller intc;
+    char input_buffer[32];
+    
     io::my_cout(io::COLOUR_LIGHT_BLUE);
 
-    //my_keyboard_driver.set_silent(true);
-
-    intc.init_interrupt_data_table();  
-    intc.load_idt_entry(0x00, (uint64_t) division_zero_handler_interrupt, 0x08, 0x8E);
+    // Initialize IDT for Adding the Interrupts
+    my_interrupt_ctl.init_interrupt_data_table();
+    // Load the first Exception Handler (Div/0 Exception) to test Exception-Handling 
+    my_interrupt_ctl.load_idt_entry(0x00, (uint64_t) division_zero_handler_interrupt, 0x08, 0x8E);
     // Load the Keyboard Interrupt Handler with its ISR-Number, the "Pointer" to the ASM Handler, its Code Segment and its Flags into the IDT  
-    intc.load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
+    my_interrupt_ctl.load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
 
     // After Connecting the ISR to the Handler the Keyboard Interrupt can be Activated    
     my_keyboard_driver.keyboard_init();
+    my_keyboard_driver.set_silent(true);
 
-    io::my_cout(io::COLOUR_GREEN);
-    intc.enable_interrupts();
+    my_interrupt_ctl.enable_interrupts();
 
+    io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Press enter to proceed...";
+    io::my_cin >> input_buffer;
+
+    my_keyboard_driver.set_silent(false);
+    
+    io::my_cout(io::COLOUR_GREEN, io::COLOUR_BLACK) << io::OSTREAM_APPEND::clear;
 
     io::my_cout << "Welcome to my 64-bit kernel!" << io::OSTREAM_APPEND::endl;
 
-    char buffer_disableCursor[32];
     io::my_cout << "Would you Like to have the Cursor enabled? yes/no" << io::OSTREAM_APPEND::endl;
     while(true) {
-        io::my_cin >> buffer_disableCursor;
-        if(string_comp(buffer_disableCursor, "yes")) {
+        io::my_cin >> input_buffer;
+        if(string_comp(input_buffer, "yes")) {
             break;
-        } else if(string_comp(buffer_disableCursor, "no")) {
+        } else if(string_comp(input_buffer, "no")) {
             CursorController::disableCursor();
             break;
         } 
         io::my_cout << "What are you trying to Say? ";
     }
 
+    io::my_cout << "Okay, then please enter your Name: ";
+    io::my_cin >> input_buffer;
+
+    io::my_cout << "Well, hello " << input_buffer << io::OSTREAM_APPEND::endl;
+    
+    // For testing of the CursorController Interface
     //CursorController::disableCursor();
-
     //CursorController::updateCursorPosition(0,3);
-
     //CursorController::enableCursor(2,3);
+
+    io::my_cout << "And now for the Input test: " << io::OSTREAM_APPEND::endl;
 
     char buffer[12];
     io::my_cin.operator>>(buffer);

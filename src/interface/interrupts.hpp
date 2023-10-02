@@ -62,4 +62,6 @@ struct interrupt_controller {
         void disable_interrupts() const;
 };
 
+extern interrupt_controller my_interrupt_ctl;
+
 #endif
