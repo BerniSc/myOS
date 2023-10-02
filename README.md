@@ -1,6 +1,8 @@
 # Background
 
-This Project is Based on [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp) and multiple other Tutorials and Projects like [this](https://github.com/pritamzope/OS/tree/master) or [this one](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System).
+This Project is Based on [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp) and multiple other Tutorials and Projects like [this](https://github.com/pritamzope/OS/tree/master) or [this one](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System).<br>
+
+The goal of this Project is to learn the basics of Operating Systems like how a Kernel works or how to write Drivers.
 
 ## Prerequisites
 
