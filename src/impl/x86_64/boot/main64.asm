@@ -51,6 +51,9 @@ global keyboard_handler_interrupt
 ;   Code Section
 ;   =====================================================================================
 
+global heap_start
+global heap_end
+
 section .heap
 bits 64
 heap_start:         ; Startlable for Heap

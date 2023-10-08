@@ -8,6 +8,13 @@
 
 #include "interrupts.hpp"
 
+#include "memory_manager.hpp"
+
+
+//https://stackoverflow.com/questions/329059/what-is-gxx-personality-v0-for
+void* __gxx_personality_v0;
+void* _Unwind_Resume;
+
 /*************************************************************************************
  * 
  *         Definition of the Global Variables that are Used by the Kernel
@@ -16,6 +23,23 @@
 keyboard_driver my_keyboard_driver;
 interrupt_controller my_interrupt_ctl;
 
+
+struct ntor_test {
+    ntor_test() {
+        io::my_cout << "I have been created...\n";
+    }
+
+    ~ntor_test() {
+        io::my_cout << "I have been destroyed...\n";
+    }
+
+    void foo() {
+        io::my_cout << "I Fooed...\n";
+    }
+};
+
+extern "C" uint64_t* heap_start;
+extern "C" uint64_t* heap_end;
 
 extern "C" void kernel_main() {
     char input_buffer[32];
@@ -54,6 +78,16 @@ extern "C" void kernel_main() {
             break;
         } 
         io::my_cout << "What are you trying to Say? ";
+    }
+
+    {
+        // ntor_test my_test;
+        memory_manager my_mm(heap_start, 4096);
+        //uint8_t* test = reinterpret_cast<uint8_t*> (my_mm.my_kmalloc(sizeof(uint8_t)));
+        //my_mm.my_kfree(test);
+        ntor_test* mem_ptr = reinterpret_cast<ntor_test*> (my_mm.my_kmalloc(sizeof(ntor_test)));
+        mem_ptr->foo();
+        my_mm.my_kfree(mem_ptr);
     }
 
     io::my_cout << "Okay, then please enter your Name: ";
