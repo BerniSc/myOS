@@ -23,26 +23,17 @@ void* _Unwind_Resume;
 keyboard_driver my_keyboard_driver;
 interrupt_controller my_interrupt_ctl;
 
-
-struct ntor_test {
-    ntor_test() {
-        io::my_cout << "I have been created...\n";
-    }
-
-    ~ntor_test() {
-        io::my_cout << "I have been destroyed...\n";
-    }
-
-    void foo() {
-        io::my_cout << "I Fooed...\n";
-    }
-};
+//*** KERNEL TEST AND DEMO FUNCTIONS ***//
+struct ntor_test;
+void test_memory_manager();
 
 extern "C" uint64_t* heap_start;
 extern "C" uint64_t* heap_end;
 
 extern "C" void kernel_main() {
     char input_buffer[32];
+
+    memory_manager my_mm(heap_start, 4096 * 4);
     
     io::my_cout(io::COLOUR_LIGHT_BLUE);
 
@@ -80,15 +71,7 @@ extern "C" void kernel_main() {
         io::my_cout << "What are you trying to Say? ";
     }
 
-    {
-        // ntor_test my_test;
-        memory_manager my_mm(heap_start, 4096);
-        //uint8_t* test = reinterpret_cast<uint8_t*> (my_mm.my_kmalloc(sizeof(uint8_t)));
-        //my_mm.my_kfree(test);
-        ntor_test* mem_ptr = reinterpret_cast<ntor_test*> (my_mm.my_kmalloc(sizeof(ntor_test)));
-        mem_ptr->foo();
-        my_mm.my_kfree(mem_ptr);
-    }
+    test_memory_manager();
 
     io::my_cout << "Okay, then please enter your Name: ";
     io::my_cin >> input_buffer;
@@ -114,4 +97,55 @@ extern "C" void kernel_main() {
     }
 
     while(true) __asm__("hlt\n\t");
+}
+
+/*********************
+ * 
+ *  KERNEL TEST
+ * 
+**********************/
+
+
+struct ntor_test {
+    ntor_test() {
+        io::my_cout << "I have been created...\n";
+    }
+
+    ~ntor_test() {
+        io::my_cout << "I have been destroyed...\n";
+    }
+
+    void foo() {
+        io::my_cout << "I Fooed...\n";
+    }
+};
+
+// Function for testing the Memory Manager
+// To shorten the function it uses a little bit nasty tricks to be able to use ternary operator
+//      Requires second and third param have same retval -> third one is "overwriten" with "void()"
+void test_memory_manager() {
+    io::my_cout << "Now for testing my Memory Manager..." << io::OSTREAM_APPEND::endl;
+
+    io::my_cout << "Creating and destroing via raw KMalloc/KFree..." << io::OSTREAM_APPEND::endl;
+    // Hm... thats a new one...: https://stackoverflow.com/questions/11320822/why-does-calling-method-through-null-pointer-work-in-c
+    ntor_test* mem_ptr = reinterpret_cast<ntor_test*> (my_kmalloc(sizeof(ntor_test) * 8));
+    (mem_ptr != nullptr) ? (mem_ptr->foo()) : (io::my_cout << "Nope... You dont get any Memory anymore..." << io::OSTREAM_APPEND::endl, void());
+    my_kfree(mem_ptr);
+
+    io::my_cout << "Creating and destroing via new/delete..." << io::OSTREAM_APPEND::endl;
+    ntor_test* new_test = new ntor_test();
+    (new_test) ? (new_test->foo()) : (io::my_cout << "Nope... You don't get any Memory anymore..." << io::OSTREAM_APPEND::endl, void());
+    delete new_test;
+
+    new_test = new ntor_test();
+    (new_test) ? (new_test->foo()) : (io::my_cout << "Nope... You don't get any Memory anymore..." << io::OSTREAM_APPEND::endl, void());
+    delete new_test;
+
+    if(new_test != nullptr) io::my_cout << "NOT NULL";
+
+    io::my_cout << "Creating and destroing per static Stack allocation..." << io::OSTREAM_APPEND::endl;
+    {
+        ntor_test my_test;
+        my_test.foo();
+    }
 }

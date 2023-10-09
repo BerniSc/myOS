@@ -1,6 +1,7 @@
 #include "memory_manager.hpp"
 
 memory_manager* memory_manager::active_memory_manager = nullptr;
+memory_manager::memory_chunk* memory_manager::first = nullptr;
 
 memory_manager::memory_manager(void* heapStart, uint64_t heapSize) {
     
@@ -21,26 +22,24 @@ memory_manager::~memory_manager() {
 }
 
 void* memory_manager::my_kmalloc(size_t size) {
-
     // Can't create empty memory chunks
-    if(!size)
+    if(!size) {
+        io::my_cout << "Cant create empty memory chunks..." << io::OSTREAM_APPEND::endl;
         return nullptr;
+    }
 
     memory_chunk* mem = first;
+    if(DEBUG_MM) io::my_cout << "Size: " << mem->size << " allocated... " << mem->allocated <<"\n";
     do {
-        
+        if(DEBUG_MM) io::my_cout << "next Chunk would be..." << (mem->next != nullptr) << io::OSTREAM_APPEND::endl;   
         // Memory chunk is big enough and not allocated
         if(mem->size >= size && !mem->allocated) {
-
             // Memory chunk is not big enough to be split in two
             // so just allocate the full chunk
             if(mem->size <= size + sizeof(memory_chunk) + MIN_CHUNK_SIZE) {
-                
                 mem->allocated = true;
-
             // Split chunk in two and allocate first one
             } else {
-
                 // Pointer to next chunk = this chunk + chunk header size + needed size 
                 memory_chunk* next = reinterpret_cast<memory_chunk*>(reinterpret_cast<uint8_t*>(mem) + sizeof(memory_chunk) + size);
 
@@ -54,18 +53,22 @@ void* memory_manager::my_kmalloc(size_t size) {
                 mem->size = size;
                 mem->next = next;
                 mem->allocated = true;
+                if(DEBUG_MM) io::my_cout << "Set the next pointer to..." << (mem->next != nullptr) << "  " << (first->next != nullptr) << "\n";
+                if(DEBUG_MM) io::my_cout << "Size of this: " << mem->size << " Allocated this "<< mem->allocated << "Size of next: " << next->size << " Allocated next "<< next->allocated <<"\n";
             }
-
+            memory_chunk* test = reinterpret_cast<memory_chunk*>(reinterpret_cast<uint8_t*>(mem) + sizeof(memory_chunk) + size);
+            if(DEBUG_MM) io::my_cout << "and tests size and next..." << test->size << "      " << (test != nullptr) << " f " << (first->next != nullptr) <<io::OSTREAM_APPEND::endl;
             return reinterpret_cast<uint8_t*>(mem) + sizeof(memory_chunk);
         }
 
     } while((mem = mem->next) != nullptr);
 
+    if(DEBUG_MM) io::my_cout << "KMALLOC ELSE... Thats probably bad... " << io::OSTREAM_APPEND::endl;
+
     return nullptr;
 }
 
-void memory_manager::my_kfree(void * ptr) {
-
+void memory_manager::my_kfree(void* ptr) {
     memory_chunk* mem = reinterpret_cast<memory_chunk*>(reinterpret_cast<uint8_t*>(ptr) - sizeof(memory_chunk));
 
     // Merge left
@@ -75,7 +78,11 @@ void memory_manager::my_kfree(void * ptr) {
     // Merge right
     if(mem->next != nullptr && !mem->next->allocated) 
         merge_left(mem->next);
-        
+
+    // TODO -> Check this FIX
+    /** DO NOT FORGET **/
+    /*****REALLY NOT*****/
+    mem->allocated = false;       
 }
 
 inline void memory_manager::merge_left(memory_chunk* toDelete) {
@@ -95,11 +102,11 @@ bool memory_manager::is_manager_active() {
     return (active_memory_manager != nullptr);
 }
 
-void* operator new(long unsigned int size) {
+void* operator new(size_t size) {
     return my_kmalloc(size);
 }
 
-void* operator new[](long unsigned int size) {
+void* operator new[](size_t size) {
     return my_kmalloc(size);
 }
 
@@ -107,7 +114,15 @@ void operator delete(void* ptr) {
     my_kfree(ptr);
 }
 
+void operator delete(void* ptr, size_t size) {
+    my_kfree(ptr);
+}
+
 void operator delete[](void* ptr) {
+    my_kfree(ptr);
+}
+
+void operator delete[](void* ptr, size_t size) {
     my_kfree(ptr);
 }
 
