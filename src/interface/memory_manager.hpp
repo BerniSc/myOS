@@ -9,7 +9,7 @@
 #define MIN_CHUNK_SIZE  0
 #define DEBUG_MM        0
 
-// My Memory Manager is shamelessly stolen from the Following GitHub Repo:
+// My Memory Manager is more or less shamelessly stolen from the Following GitHub Repo:
 //      https://github.com/cmilatinov/sick-os-64/tree/master
 // From this some Parts have been changed
 //
@@ -42,6 +42,8 @@ struct memory_manager {
         void* my_kmalloc(size_t size);
         void my_kfree(void* pointer);
 
+        
+
     public:        
         memory_manager(void* heap_start, uint64_t heap_size);
 
@@ -52,6 +54,8 @@ struct memory_manager {
         // Let actuall KMalloc and KFree Implementations access the Internal Memory Management Data
         friend void* my_kmalloc(size_t size);
         friend void my_kfree(void* ptr);
+        
+        void print_size_first_chunk() const;
 };
 
 //** Referenceless Implementations of KMalloc and Kfree for global use **//

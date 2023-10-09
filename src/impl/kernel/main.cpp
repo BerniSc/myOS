@@ -25,7 +25,7 @@ interrupt_controller my_interrupt_ctl;
 
 //*** KERNEL TEST AND DEMO FUNCTIONS ***//
 struct ntor_test;
-void test_memory_manager();
+void test_memory_manager(memory_manager&);
 
 extern "C" uint64_t* heap_start;
 extern "C" uint64_t* heap_end;
@@ -71,7 +71,7 @@ extern "C" void kernel_main() {
         io::my_cout << "What are you trying to Say? ";
     }
 
-    test_memory_manager();
+    test_memory_manager(my_mm);
 
     io::my_cout << "Okay, then please enter your Name: ";
     io::my_cin >> input_buffer;
@@ -123,7 +123,7 @@ struct ntor_test {
 // Function for testing the Memory Manager
 // To shorten the function it uses a little bit nasty tricks to be able to use ternary operator
 //      Requires second and third param have same retval -> third one is "overwriten" with "void()"
-void test_memory_manager() {
+void test_memory_manager(memory_manager& mm) {
     io::my_cout << "Now for testing my Memory Manager..." << io::OSTREAM_APPEND::endl;
 
     io::my_cout << "Creating and destroing via raw KMalloc/KFree..." << io::OSTREAM_APPEND::endl;
@@ -141,7 +141,15 @@ void test_memory_manager() {
     (new_test) ? (new_test->foo()) : (io::my_cout << "Nope... You don't get any Memory anymore..." << io::OSTREAM_APPEND::endl, void());
     delete new_test;
 
+    ntor_test* array[5];
+    for(int i = 0; i < 5; i++) {
+        array[i] = new ntor_test();
+    } 
     if(new_test != nullptr) io::my_cout << "NOT NULL";
+    for(int i = 0; i < 5; i++) {
+        delete array[i];
+    }
+    mm.print_size_first_chunk();
 
     io::my_cout << "Creating and destroing per static Stack allocation..." << io::OSTREAM_APPEND::endl;
     {

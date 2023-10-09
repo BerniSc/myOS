@@ -183,3 +183,8 @@ void kmemset_f(void* dest, size_t size, uint8_t value) {
 
     }
 }
+
+void memory_manager::print_size_first_chunk() const {
+    io::my_cout << "The Size of the first Chunk is currently: " << this->first->size << io::OSTREAM_APPEND::endl;
+    if(this->first->next != nullptr) io::my_cout << "Second Chunk's Size is currently: " << this->first->next->size << io::OSTREAM_APPEND::endl;
+}
