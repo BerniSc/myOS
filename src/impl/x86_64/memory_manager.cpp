@@ -4,7 +4,6 @@ memory_manager* memory_manager::active_memory_manager = nullptr;
 memory_manager::memory_chunk* memory_manager::first = nullptr;
 
 memory_manager::memory_manager(void* heapStart, uint64_t heapSize) {
-    
     // Create initial chunk
     first = reinterpret_cast<memory_chunk*>(heapStart);
     first->prev = nullptr;
@@ -17,10 +16,11 @@ memory_manager::memory_manager(void* heapStart, uint64_t heapSize) {
 }
 
 memory_manager::~memory_manager() {
-    if(active_memory_manager == this)
+    if(active_memory_manager == this) 
         active_memory_manager = nullptr;
 }
 
+// Implementation of the Buddy Allocators KMalloc
 void* memory_manager::my_kmalloc(size_t size) {
     // Can't create empty memory chunks
     if(!size) {
@@ -36,7 +36,7 @@ void* memory_manager::my_kmalloc(size_t size) {
         if(mem->size >= size && !mem->allocated) {
             // Memory chunk is not big enough to be split in two
             // so just allocate the full chunk
-            if(mem->size <= size + sizeof(memory_chunk) + MIN_CHUNK_SIZE) {
+            if(mem->size <= (size + sizeof(memory_chunk) + MIN_CHUNK_SIZE)) {
                 mem->allocated = true;
             // Split chunk in two and allocate first one
             } else {
@@ -69,8 +69,16 @@ void* memory_manager::my_kmalloc(size_t size) {
 }
 
 void memory_manager::my_kfree(void* ptr) {
+    // Free the Memorychunk including its header 
     memory_chunk* mem = reinterpret_cast<memory_chunk*>(reinterpret_cast<uint8_t*>(ptr) - sizeof(memory_chunk));
 
+    // should NOT free Memory that is not allocated
+    if(mem->allocated != true) {
+        io::my_cout << "Forbidden Free..." << io::OSTREAM_APPEND::endl;
+        return;
+    }
+
+    // If at all possible Merge the empty Chunks together to free the Memory
     // Merge left
     if(mem->prev != nullptr && !mem->prev->allocated)
         merge_left(mem);
@@ -79,10 +87,12 @@ void memory_manager::my_kfree(void* ptr) {
     if(mem->next != nullptr && !mem->next->allocated) 
         merge_left(mem->next);
 
+    // Actually FREE the Memory
     // TODO -> Check this FIX
     /** DO NOT FORGET **/
     /*****REALLY NOT*****/
-    mem->allocated = false;       
+    //** Seems it is appropriate, but TODO Marker left in case of nasty future errors in MM **/
+    mem->allocated = false;     
 }
 
 inline void memory_manager::merge_left(memory_chunk* toDelete) {
@@ -90,7 +100,7 @@ inline void memory_manager::merge_left(memory_chunk* toDelete) {
     toDelete->prev->next = toDelete->next;
 
     // Update right pointer if not last chunk in list
-    if(toDelete->next != nullptr)
+    if(toDelete->next != nullptr) 
         toDelete->next->prev = toDelete->prev;
 
     // Add this chunk's full size to the left chunk
@@ -130,25 +140,26 @@ void kmemcpy(const void* src, void* dest, size_t size) {
     uint8_t* destPtr = reinterpret_cast<uint8_t*>(dest);
     const uint8_t* srcPtr = reinterpret_cast<const uint8_t*>(src);
     
-    for(size_t i = 0; i < size; i++)
+    for(size_t i = 0; i < size; i++) {
         destPtr[i] = srcPtr[i];
-        
+    }
 }
 
 void kmemcpy_f(const void* src, void* dest, size_t size) {
     uint64_t* destPtr = reinterpret_cast<uint64_t*>(dest);
     const uint64_t* srcPtr = reinterpret_cast<const uint64_t*>(src);
     
-    for(size_t i = 0; i < size / sizeof(uint64_t); i++)
+    for(size_t i = 0; i < size / sizeof(uint64_t); i++) {
         destPtr[i] = srcPtr[i];
-    
+    }
+
     if(size & 0b111) {
         uint8_t* d = reinterpret_cast<uint8_t*>(destPtr) + size - (size & 0b111);
         const uint8_t* s = reinterpret_cast<const uint8_t*>(srcPtr) + size - (size & 0b111);
 
-        for(uint8_t i = 0; i < (size & 0b111); i++)
+        for(uint8_t i = 0; i < (size & 0b111); i++) {
             d[i] = s[i];
-
+        }
     }
 }
 
@@ -164,27 +175,35 @@ void* kmemset(void* dest, uint8_t src, size_t c) {
 }
 
 void kmemset_f(void* dest, size_t size, uint8_t value) {
-
     uint64_t* destPtr = reinterpret_cast<uint64_t*>(dest);
     uint8_t _value64[8] = { value, value, value, value, value, value, value, value };
     uint64_t value64 = *reinterpret_cast<uint64_t*>(_value64);
 
     size_t end = size / sizeof(uint64_t);
-    for(size_t i = 0; i < end; i++)
+    for(size_t i = 0; i < end; i++) {
         destPtr[i] = value64;
+    }
     
     size_t leftover = size & 0x7;
     if(leftover) {
-
         uint8_t* d = reinterpret_cast<uint8_t*>(destPtr + end);
 
-        for(uint8_t i = 0; i < leftover; i++)
+        for(uint8_t i = 0; i < leftover; i++) {
             d[i] = value;
-
+        }
     }
 }
 
-void memory_manager::print_size_first_chunk() const {
-    io::my_cout << "The Size of the first Chunk is currently: " << this->first->size << io::OSTREAM_APPEND::endl;
-    if(this->first->next != nullptr) io::my_cout << "Second Chunk's Size is currently: " << this->first->next->size << io::OSTREAM_APPEND::endl;
+void memory_manager::print_size_chunk() const {
+    int iteration_number = 0;
+    // Init with negative Header Size, as there is always an unavoidable Header so it is not really a direct loss...
+    int loss_due_to_header = -sizeof(memory_chunk);
+    memory_chunk* iterator = this->first;
+    do {
+        if(iterator != nullptr) {
+            io::my_cout << (++iteration_number) << ". Chunk's Size is currently: " << iterator->size << io::OSTREAM_APPEND::endl;
+            loss_due_to_header += sizeof(memory_chunk);
+        }
+    } while((iterator = iterator->next) != nullptr);
+    io::my_cout << "Loss due to Header-Size: " << loss_due_to_header << "\n";
 }

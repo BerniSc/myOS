@@ -55,7 +55,7 @@ struct memory_manager {
         friend void* my_kmalloc(size_t size);
         friend void my_kfree(void* ptr);
         
-        void print_size_first_chunk() const;
+        void print_size_chunk() const;
 };
 
 //** Referenceless Implementations of KMalloc and Kfree for global use **//

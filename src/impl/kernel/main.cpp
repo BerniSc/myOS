@@ -71,7 +71,7 @@ extern "C" void kernel_main() {
         io::my_cout << "What are you trying to Say? ";
     }
 
-    test_memory_manager(my_mm);
+    //test_memory_manager(my_mm);
 
     io::my_cout << "Okay, then please enter your Name: ";
     io::my_cin >> input_buffer;
@@ -125,7 +125,7 @@ struct ntor_test {
 //      Requires second and third param have same retval -> third one is "overwriten" with "void()"
 void test_memory_manager(memory_manager& mm) {
     io::my_cout << "Now for testing my Memory Manager..." << io::OSTREAM_APPEND::endl;
-
+    
     io::my_cout << "Creating and destroing via raw KMalloc/KFree..." << io::OSTREAM_APPEND::endl;
     // Hm... thats a new one...: https://stackoverflow.com/questions/11320822/why-does-calling-method-through-null-pointer-work-in-c
     ntor_test* mem_ptr = reinterpret_cast<ntor_test*> (my_kmalloc(sizeof(ntor_test) * 8));
@@ -141,6 +141,10 @@ void test_memory_manager(memory_manager& mm) {
     (new_test) ? (new_test->foo()) : (io::my_cout << "Nope... You don't get any Memory anymore..." << io::OSTREAM_APPEND::endl, void());
     delete new_test;
 
+    if(new_test == nullptr) io::my_cout << "YET NULL";
+    
+    mm.print_size_chunk();
+
     ntor_test* array[5];
     for(int i = 0; i < 5; i++) {
         array[i] = new ntor_test();
@@ -149,7 +153,22 @@ void test_memory_manager(memory_manager& mm) {
     for(int i = 0; i < 5; i++) {
         delete array[i];
     }
-    mm.print_size_first_chunk();
+
+    
+    //int* test[20];
+    //for(int i = 0; i < 20; i++) {
+    //    test[i] = new int(i+1);
+    //}
+    //mm.print_size_chunk();
+    //io::my_cout << "\n";
+    //for(int i = 0; i < 20; i++) {
+    //    io::my_cout << "   " << *test[i];
+    //}
+    //io::my_cout << "\n";
+    //for(int i = 0; i < 20; i++) {
+    //    delete test[i];
+    //}
+    mm.print_size_chunk();
 
     io::my_cout << "Creating and destroing per static Stack allocation..." << io::OSTREAM_APPEND::endl;
     {
