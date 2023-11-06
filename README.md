@@ -1,8 +1,12 @@
 # Background
 
-This Project is Based on [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp) and multiple other Tutorials and Projects like [this](https://github.com/pritamzope/OS/tree/master) or [this one](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System).<br>
+This Project is Based on [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp) and multiple other Tutorials and Projects like [this](https://github.com/pritamzope/OS/tree/master) or [this one](https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System). It focuses on writing a small x86 Kernel in 64bit Longmode using C++ and adding as much functionality as possible along the way.<br>
 
-The goal of this Project is to learn the basics of Operating Systems like how a Kernel works or how to write Drivers.
+The goal of this Project is to learn the basics of Operating Systems, for example how a Kernel works or how to implement Drivers.
+
+For now the OS contains a very barebones version of a Keyboard-Driver that is currently just used to test the Basic Keyboard-Functionality. It only recognises the most basic of keypresses. The Keyboardpresses are hooked up to a System-Interrupt, that can be processed from anywhere in the System. Also the classic C++ IO Operations (std::cout and std::cin) are implmenented and working. The OS also contains a very basic Buddy-Allocator to be able to allocate Memory dynamically.
+
+Sadly due to lack of of time the current state of the project is stuck somewhere in prototyping and testing. Individually the parts seem to work, but for example the IO Operations still use a buffer that has been created using static allocation and the Keyboard-Driver can not yet process keys like Backspace or something else. I hope I soon find the time to clean up here and proceed working on this project. It was quite a lot of fun up to this point.
 
 ## Prerequisites
 
