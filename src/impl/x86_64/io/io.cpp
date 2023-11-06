@@ -184,11 +184,11 @@ void io::my_istream::reset_recieved_character() {
     this->has_recieved = false;
 }
 
-io::my_istream& io::my_istream::operator>>(char string_buffer[12]) {
+io::my_istream& io::my_istream::operator>>(char string_buffer[constants::INPUT_BUFFER_SIZE]) {
     // Operation should be Thread-Blocking -> Therefore While Loop 
     // TODO Maybe allow for STRG-C to Quit?
 
-    while((this->buffer_pos < (CIN_BUFFER_LENGTH - 1)) && (this->recieved_character != this->termination_character)) { 
+    while((this->buffer_pos < (constants::INPUT_BUFFER_SIZE - 1)) && (this->recieved_character != this->termination_character)) { 
         if(this->has_recieved && this->recieved_character != this->termination_character) {
             this->has_recieved = false;
             string_buffer[this->buffer_pos++] = this->recieved_character;

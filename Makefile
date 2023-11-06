@@ -15,6 +15,9 @@ x86_64_asm_object_files := $(patsubst src/impl/x86_64/%.asm, build/x86_64/%.o, $
 
 x86_64_object_files := $(x86_64_cxx_object_files) $(x86_64_asm_object_files)
 
+# TODO -> shell find src/interface -type d -name "+" --> add -I and pass down
+#interface_include_dirs
+
 $(kernel_object_files): build/kernel/%.o : src/impl/kernel/%.cpp
 	mkdir -p $(dir $@) && \
 	$(COMPILER_CXX) -c -I src/interface -ffreestanding $(patsubst build/kernel/%.o, src/impl/kernel/%.cpp, $@) -o $@

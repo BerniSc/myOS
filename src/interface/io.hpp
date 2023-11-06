@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <cstddef>
 
+#include "common_config.hpp"
+
 #include "print.hpp"
 #include "utils.hpp"
 #include "cursor.hpp"
@@ -13,8 +15,6 @@ struct vga_char {
     uint8_t character;
     uint8_t color;
 };
-
-#define CIN_BUFFER_LENGTH 12
 
 namespace io {
     // Lenght and Height of VGA Terminal
@@ -43,6 +43,10 @@ namespace io {
     enum OSTREAM_APPEND {
         endl = 0,
         clear = 1,
+    };
+
+    enum ISTREAM_APPEND {
+        dummy = 0,      // Maybe add Dummy as kind of GetChar Mode? Wait for Enter....
     };
 
     // Own Implementation of ostream
@@ -103,9 +107,9 @@ namespace io {
             // Let the Keyboard driver access the Private Functions (i.e. operator<<()) of this Class
             friend class keyboard_driver;
         public:
-            //sadly not yet Safe. For now it is assumend that this function is calld with a Char buffer with the size of at least CIN_BUFFER_LENGTH
+            // sadly not yet Safe. For now it is assumend that this function is calld with a Char buffer with the size of at least CIN_BUFFER_LENGTH
             // The Other bits are disregarded. Otherwise there WILL BE AN UNCOMFORTABLE MEMORY EXCEPTION -->> TODO
-            my_istream& operator>>(char string_buffer[12]);
+            my_istream& operator>>(char string_buffer[constants::INPUT_BUFFER_SIZE]);
 
             // Sadly for now has to be PUBLIC as ISR is not yet a Member function -> Must be accessible globaly TODO
             void operator<<(char character);

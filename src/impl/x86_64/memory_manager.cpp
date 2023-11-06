@@ -87,10 +87,7 @@ void memory_manager::my_kfree(void* ptr) {
     if(mem->next != nullptr && !mem->next->allocated) 
         merge_left(mem->next);
 
-    // Actually FREE the Memory
     // TODO -> Check this FIX
-    /** DO NOT FORGET **/
-    /*****REALLY NOT*****/
     //** Seems it is appropriate, but TODO Marker left in case of nasty future errors in MM **/
     mem->allocated = false;     
 }
@@ -205,5 +202,10 @@ void memory_manager::print_size_chunk() const {
             loss_due_to_header += sizeof(memory_chunk);
         }
     } while((iterator = iterator->next) != nullptr);
+    
+    // This fixes the Case that nothing is currently allocated in this Manager -> Even the first element is zero
+    if(loss_due_to_header < 0)
+        loss_due_to_header = 0;
+
     io::my_cout << "Loss due to Header-Size: " << loss_due_to_header << "\n";
 }
