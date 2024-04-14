@@ -88,6 +88,6 @@ void interrupt_controller::enable_interrupts() const {
 
 void interrupt_controller::disable_interrupts() const {
     asm volatile(
-        "sti"
+        "cli"
     );
 }
