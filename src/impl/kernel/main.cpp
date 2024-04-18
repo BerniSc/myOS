@@ -26,10 +26,6 @@ void* _Unwind_Resume;
 keyboard_driver my_keyboard_driver;
 interrupt_controller my_interrupt_ctl;
 
-//*** KERNEL TEST AND DEMO FUNCTIONS ***//
-struct ntor_test;
-void test_memory_manager(memory_manager&);
-
 extern "C" uint64_t* heap_start;
 extern "C" uint64_t* heap_end;
 
@@ -78,6 +74,7 @@ extern "C" void kernel_main() {
 
     io::my_cout << "Okay, then please enter your Name: ";
     io::my_cin >> input_buffer;
+
 
     io::my_cout << "Well, hello " << input_buffer << io::OSTREAM_APPEND::endl;
     
