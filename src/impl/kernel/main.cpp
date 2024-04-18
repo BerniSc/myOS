@@ -13,6 +13,8 @@
 #include "memory_manager.hpp"
 #include "ps_pointer.hpp"
 
+#include "../interface/kernel_tests.hpp"
+#include "disk_driver.hpp"
 
 //https://stackoverflow.com/questions/329059/what-is-gxx-personality-v0-for
 void* __gxx_personality_v0;
@@ -33,6 +35,7 @@ extern "C" void kernel_main() {
     char input_buffer[constants::INPUT_BUFFER_SIZE];
 
     memory_manager my_mm(heap_start, 4096 * 4);
+    disk_driver my_disk_driver;
     
     io::my_cout(io::COLOUR_LIGHT_BLUE);
 
@@ -71,6 +74,10 @@ extern "C" void kernel_main() {
     }
 
     test_memory_manager(my_mm);
+    io::my_cout << "Now for testing the Disk IO Driver Features: Press enter to continue..." << io::OSTREAM_APPEND::endl;
+    io::my_cin >> input_buffer;
+    test_disk_driver(my_disk_driver);
+    io::my_cin >> input_buffer;
 
     io::my_cout << "Okay, then please enter your Name: ";
     io::my_cin >> input_buffer;

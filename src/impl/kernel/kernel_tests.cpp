@@ -19,6 +19,30 @@ struct ntor_test {
     }
 };
 
+void test_disk_driver(disk_driver& diskDriver) {
+    char* strDiskTest = "Hello, Disk!";
+    uint16_t bufferDiskTest[256]; // Buffer one sector
+    kmemset(bufferDiskTest, 0, 512);
+    // Copy string (assuming string is shorter than 512 bytes)
+    kmemcpy(strDiskTest, bufferDiskTest, strlen(strDiskTest) + 1);
+
+    // Write string to first Sector of Disk
+    diskDriver.write(0, 1, bufferDiskTest);
+    io::my_cout << "Wrote to disk: " << strDiskTest << io::OSTREAM_APPEND::endl;
+
+    // Clear buffer to read back the data
+    kmemset(bufferDiskTest, 0, 512);
+
+    // Read back first sector 
+    diskDriver.read(0, 1, bufferDiskTest);
+
+    // Assuming read data is null-terminated string
+    char* readStr = reinterpret_cast<char*>(bufferDiskTest);
+
+    io::my_cout << "Read from disk: " << readStr << io::OSTREAM_APPEND::endl;
+
+}
+
 // Function for testing the Memory Manager
 // To shorten the function it uses a little bit nasty tricks to be able to use ternary operator
 //      Requires second and third param have same retval -> third one is "overwriten" with "void()"

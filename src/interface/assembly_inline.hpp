@@ -11,6 +11,8 @@
 
 #include <inttypes.h>
 
+typedef unsigned short int uint16_t;
+
 // Recieve x Bit on IO-Location with Port
 uint8_t  inb(uint16_t port);
 uint16_t inw(uint16_t port);
