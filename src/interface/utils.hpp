@@ -3,6 +3,8 @@
 
 #include <inttypes.h>
 
+#include "timer.hpp"
+
 extern uint32_t strlen(const char* string);
 extern uint32_t digit_count(int number);
 
@@ -87,5 +89,6 @@ void itoa_t(T value, char* buffer, int base = 10) {
     }
 }
 
+void sleep(uint32_t ms);
 
 #endif

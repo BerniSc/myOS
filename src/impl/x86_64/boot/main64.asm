@@ -3,8 +3,11 @@ extern kernel_main
 
 ; interrupts
 extern keyboad_handler_isr
+extern timer_interrupt_handler_isr
+
 global load_interrupt_data_table
 global keyboard_handler_interrupt
+global timer_handler_interrupt
 
 ;   =====================================================================================
 ;   MACRO Defintions
@@ -78,6 +81,13 @@ keyboard_handler_interrupt:
 	pushaq
 	cld
 	call keyboad_handler_isr
+	popaq
+	iretq
+
+timer_handler_interrupt:
+	pushaq
+	cld
+	call timer_interrupt_handler_isr
 	popaq
 	iretq
 

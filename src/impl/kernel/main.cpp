@@ -3,6 +3,7 @@
 #include "cursor.hpp"
 #include "utils.hpp"
 #include "keyboard.hpp"
+#include "timer.hpp"
 
 #include "common_config.hpp"
 
@@ -15,6 +16,7 @@
 
 #include "../interface/kernel_tests.hpp"
 #include "disk_driver.hpp"
+#include "fat.hpp"
 
 //https://stackoverflow.com/questions/329059/what-is-gxx-personality-v0-for
 void* __gxx_personality_v0;
@@ -35,7 +37,12 @@ extern "C" void kernel_main() {
     char input_buffer[constants::INPUT_BUFFER_SIZE];
 
     memory_manager my_mm(heap_start, 4096 * 4);
-    disk_driver my_disk_driver;
+    disk_driver* my_disk_driver = new disk_driver();
+    disk_driver myRefDiskDriver;
+
+    Timer my_timer;
+    my_timer.init_timer(100);
+
     
     io::my_cout(io::COLOUR_LIGHT_BLUE);
 
@@ -46,11 +53,16 @@ extern "C" void kernel_main() {
     // Load the Keyboard Interrupt Handler with its ISR-Number, the "Pointer" to the ASM Handler, its Code Segment and its Flags into the IDT  
     my_interrupt_ctl.load_idt_entry(0x21, (uint64_t) keyboard_handler_interrupt, 0x08, 0x8E);
 
+    my_interrupt_ctl.load_idt_entry(0x20, (uint64_t) timer_handler_interrupt, 0x08, 0x8E);
+
     // After Connecting the ISR to the Handler the Keyboard Interrupt can be Activated    
     my_keyboard_driver.keyboard_init();
     my_keyboard_driver.set_silent(true);
 
     my_interrupt_ctl.enable_interrupts();
+
+    my_timer.unmask_timer();
+    sleep(2000);
 
     io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Press enter to proceed...";
     io::my_cin >> input_buffer;
@@ -76,7 +88,13 @@ extern "C" void kernel_main() {
     test_memory_manager(my_mm);
     io::my_cout << "Now for testing the Disk IO Driver Features: Press enter to continue..." << io::OSTREAM_APPEND::endl;
     io::my_cin >> input_buffer;
-    test_disk_driver(my_disk_driver);
+    //test_disk_driver(my_disk_driver);
+
+    filesystem::FatFileSystem my_fat_fs;
+    // my_fat_fs.formatDiskToFAT(&my_disk_driver);
+    my_fat_fs.Initialize(myRefDiskDriver, 0x0);
+    my_fat_fs.ListRootDir();
+
     io::my_cin >> input_buffer;
 
     io::my_cout << "Okay, then please enter your Name: ";

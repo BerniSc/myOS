@@ -7,6 +7,8 @@
 #include "assembly_inline.hpp"
 
 extern "C" void keyboad_handler_isr();
+extern "C" void timer_handler_isr();
+
 
 extern "C" void keyboard_handler_interrupt();
 extern "C" void division_zero_handler_interrupt();

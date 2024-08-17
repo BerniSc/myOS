@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "io.hpp"
 
 uint32_t strlen(const char* str) {
     uint32_t length = 0;
@@ -63,4 +64,14 @@ bool string_comp(const char* string1, const char* string2) {
 
     // Check if both Strings have reached their end
     return (*string1 == '\0' && *string2 == '\0');
+}
+
+void sleep(uint32_t ms) {
+    uint32_t start_ticks = ticks;
+    uint32_t target_ticks = start_ticks + (ms / 10); // Assuming TIMER_FREQ is 100Hz (10ms per tick)
+    io::my_cout << ticks << "\n";
+    
+    while (ticks < target_ticks) {
+        asm volatile("hlt"); // Halt the CPU until the next interrupt for power efficiency
+    }
 }
