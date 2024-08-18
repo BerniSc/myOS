@@ -18,6 +18,11 @@
 #include "disk_driver.hpp"
 #include "fat.hpp"
 
+#include "DiskDriver.hpp"
+#include "FATDriver.hpp"
+#include "vector.hpp"
+
+
 //https://stackoverflow.com/questions/329059/what-is-gxx-personality-v0-for
 void* __gxx_personality_v0;
 void* _Unwind_Resume;
@@ -37,8 +42,9 @@ extern "C" void kernel_main() {
     char input_buffer[constants::INPUT_BUFFER_SIZE];
 
     memory_manager my_mm(heap_start, 4096 * 4);
-    disk_driver* my_disk_driver = new disk_driver();
-    disk_driver myRefDiskDriver;
+    // disk_driver* my_disk_driver = new disk_driver();
+    // disk_driver myRefDiskDriver;
+
 
     Timer my_timer;
     my_timer.init_timer(100);
@@ -61,8 +67,8 @@ extern "C" void kernel_main() {
 
     my_interrupt_ctl.enable_interrupts();
 
-    my_timer.unmask_timer();
-    sleep(2000);
+    // my_timer.unmask_timer();
+    // sleep(20000);
 
     io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Press enter to proceed...";
     io::my_cin >> input_buffer;
@@ -90,10 +96,40 @@ extern "C" void kernel_main() {
     io::my_cin >> input_buffer;
     //test_disk_driver(my_disk_driver);
 
-    filesystem::FatFileSystem my_fat_fs;
-    // my_fat_fs.formatDiskToFAT(&my_disk_driver);
-    my_fat_fs.Initialize(myRefDiskDriver, 0x0);
-    my_fat_fs.ListRootDir();
+
+    DiskDriver disk;
+    if(!disk.initialize()) {
+        io::my_cout << "Failed to Init Disk\n";
+    }
+    FATDriver fat(disk);
+    if(!fat.initialize()) {
+        io::my_cout << "Failed to init FAT\n";
+    }
+    //if(!fat.formatDisk()) {
+        //io::my_cout << "Failed to Format Disk\n";
+    //}
+
+    io::my_cout << "Formatted Disk and set up\n";
+    const char* testFile = "TSTFLTXT2";
+    const uint8_t fileData[] = "Hello, FAT16!";
+    uint32_t fileSize = sizeof(fileData) - 1;   // Exclude 0 Terminator
+
+    if(!fat.createFile(testFile, fileData, fileSize))
+        io::my_cout << "Failed to create File\n";
+
+    io::my_cout << "========\n";
+    Vector<char*> dirEntries = fat.listDirectory("/");
+    for(size_t i = 0; i < dirEntries.size(); ++i) {
+        io::my_cout << dirEntries[i] << "\n";
+        delete[] dirEntries[i];
+    }
+
+
+    // filesystem::FatFileSystem my_fat_fs;
+//    filesystem::FatFileSystem my_fat_fs;
+//    my_fat_fs.formatDiskToFAT(my_disk_driver);
+//    my_fat_fs.Initialize(my_disk_driver, 0x0);
+//    my_fat_fs.ListRootDir();
 
     io::my_cin >> input_buffer;
 

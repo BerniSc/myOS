@@ -24,9 +24,9 @@ bool FATDriver::parseBPB() {
     sectorsPerCluster = sector[13];
     uint16_t reservedSectors = *(uint16_t*) &sector[14];
     uint8_t numFATs = sector[16];
-    uint16_t rootEntryCount = *(uint16_t*) & sector[17];
-    uint16_t totalSectors16 = *(uint16_t*) & sector[19];
-    uint16_t sectorsPerFAT16 = *(uint16_t*) & sector[22];
+    uint16_t rootEntryCount = *(uint16_t*) &sector[17];
+    uint16_t totalSectors16 = *(uint16_t*) &sector[19];
+    uint16_t sectorsPerFAT16 = *(uint16_t*) &sector[22];
 
     if(totalSectors16 == 0) {
         uint32_t totalSectors32 = *(uint32_t*) &sector[32];
@@ -127,11 +127,209 @@ bool FATDriver::readFile(const char* path, Vector<uint8_t>& buffer) {
     return false;           // File not Found
 }
 
+bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size) {
+    uint8_t sector[512];
+    uint32_t rootDirSector = rootDirStart;
+    bool found = false;
+    int freeEntryOffset = -1;
+
+    // Search for a free Dir-Entry in the Root Dir
+    for(uint32_t i = 0; i < rootDirSectors; ++i) {
+        if(!diskDriver.readSector(rootDirSector + i, sector))
+            return false;       // Failed to read Sector
+
+        for(int j = 0; j < 512; j += 32) {
+            if(sector[j] == 0 || sector[j] == 0xE5) {
+                // Found a free Entry
+                freeEntryOffset = j;
+                found = true;
+                break;
+            }
+        }
+
+        if(found)
+            break;
+    }
+    
+    if(!found)
+        return false;       // No free Directory-Entry found
+
+    // Find free clusters and write Data to them
+    uint32_t remainingSize = size;
+    uint16_t firstCluster = findFreeCluster();
+    uint16_t currentCluster = firstCluster;
+    uint16_t prevCluster = 0;
+
+    if(firstCluster == 0xFFFF)
+        return false;   // No Free Clusters available
+
+    while(remainingSize > 0) {
+        uint8_t dataSector[512] = {0};
+        size_t bytesToCopy = (remainingSize > 512) ? 512 : remainingSize;
+        kmemcpy(data, dataSector, bytesToCopy);
+
+        uint32_t lba = clusterToLBA(currentCluster);
+        if(!diskDriver.writeSector(lba, dataSector))
+            return false;       // Failed to write Sector
+
+        remainingSize -= bytesToCopy;
+        data += bytesToCopy;
+
+        if(remainingSize > 0) {
+            uint16_t nextCluster = findFreeCluster();
+            if(nextCluster == 0xFFFF)
+                return false;   // No free Clusters available
+
+            setNextCluster(currentCluster, nextCluster);
+            currentCluster = nextCluster;
+        }
+    }
+
+    setNextCluster(currentCluster, 0xFFFF);     // Mark end of cluster Chain
+
+    // Create a dir-entry
+    kmemset(&sector[freeEntryOffset], 0, 32);
+    kmemcpy(path, &sector[freeEntryOffset], 11);
+    sector[freeEntryOffset + 11] = 0x20;        // File Attribute: Archive
+    *(uint16_t*) &sector[freeEntryOffset + 26] = firstCluster;
+    *(uint32_t*) &sector[freeEntryOffset + 28] = size;
+
+    // Write updated dir-sector back to the disk
+    if(!diskDriver.writeSector(rootDirSector + (freeEntryOffset / 512), sector))
+        return false;       // Failed to write Sector
+    
+    return true;
+}
+
+bool FATDriver::createDirectory(const char* name, uint16_t parentCluster) {
+    // Find a free Cluster
+    uint16_t freeCluster = findFreeCluster();
+
+    if(freeCluster == 0xFFFF)
+        return false;       // No free Clusters Found
+
+    // Init the directory cluster
+    uint8_t sector[512] = {0};
+    if(!diskDriver.writeSector(dataStart + (freeCluster - 2) * sectorsPerCluster, sector))
+        return false;       // Failed to write directory Sector
+    
+    // Create a directory-Entry in the parent Directory
+    // For now assume the parentCluster points to the parent-dirs first cluster
+    uint16_t parentSector = dataStart + (parentCluster - 2) * sectorsPerCluster;
+    for(uint32_t i = 0; i < sectorsPerCluster; ++i) {
+        if(!diskDriver.readSector(parentSector + i, sector))
+            return false;   // Failed to read parent directory sector
+        
+        for(uint32_t j = 0; j < 512; ++j) {
+            // Check for Empty or deleted Entry
+            if(sector[j] == 0x00 || sector[j] = 0xE5) {
+                // Fill the dir-entry
+                kmemset(&sector[j], 0, 32);
+                kmemcpy(name, &sector[j], 12);  // Copy the Name into the Sector
+                sector[j + 11] = 0x10;          // Set Attribute to directory
+                *(uint16_t*) &sector[j + 26] = freeCluster;
+
+                // TODO - Finish / combine with File
+            }
+        }
+    }
+}
+
 uint32_t FATDriver::clusterToLBA(uint32_t cluster) {
     return dataStart + (cluster - 2) * sectorsPerCluster;
 }
 
 bool FATDriver::formatDisk() {
     uint8_t sector[512] = {0};
+
+    // Populate the boot sector with BPB
+    sector[11] = 0x00;                  // Bytes per Sector
+    sector[12] = 0x02;
+    sector[13] = 0x01;                  // Sectors per Cluster
+    *(uint16_t*) &sector[14] = 1;       // Reserved Sectors
+    sector[16] = 2;                     // Number if FATs
+    *(uint16_t*) &sector[17] = 512;     // Root Entry Count
+    *(uint16_t*) &sector[19] = 2880;    // Total sectors for a 1.44MB floppy
+    sector[21] = 0xF8;                  // Media Descriptor
+    *(uint16_t*) &sector[22] = 9;       // Sectors per FAT
+    *(uint16_t*) &sector[24] = 18;      // Sectors per Track
+    *(uint16_t*) &sector[26] = 2;       // Number of Heads
+
+    // Write OEM Name and File-System-Type
+    const char* oemName = "MKDOSFS ";
+    const char* fsType =  "FAT16   ";
+    kmemcpy(oemName, &sector[3], 8);
+    kmemcpy(fsType, &sector[54], 8);
+
+    if(!diskDriver.writeSector(0, sector))
+        return false;       // Failed to write Boot Sector
     
+    // Initialize the FAT tables
+    for(uint32_t i = 0; i < 2 * 9; ++i) {
+        kmemset(sector, 0, 512);
+        if(i == 0) {
+            sector[0] = 0xF8;       // Media Descriptor
+            sector[1] = 0xFF;
+            sector[2] = 0xFF;
+        }
+        if(!diskDriver.writeSector(1 + i, sector))
+            return false;   // Failed to initialize the FAT Tables
+    }
+
+    // Initialize the root Directory
+    for(uint32_t i = 0; i < 14; ++i) {
+        kmemset(sector, 0, 512);
+        if(!diskDriver.writeSector(19 + i, sector))
+            return false;   // Failed to initialize the rootDirectory
+
+    }
+
+    // Refresh internal state after Formatting
+    return initialize();
+}
+
+uint16_t FATDriver::getNextCluster(uint16_t cluster) {
+    uint8_t sector[512];
+    uint32_t fatSector = fatStart + (cluster * 2 / 512);
+    uint32_t fatOffset = (cluster * 2) % 512;
+
+    if(!diskDriver.readSector(fatSector, sector))
+        return 0xFFFF;      // Error in reading Sector
+
+    return *(uint16_t*) &sector[fatOffset];
+}
+
+bool FATDriver::setNextCluster(uint16_t cluster, uint16_t value) {
+    uint8_t sector[512];
+    uint32_t fatSector = fatStart + (cluster * 2 / 512);
+    uint32_t fatOffset = (cluster * 2) % 512;
+
+    if(!diskDriver.readSector(fatSector, sector))
+        return false;      // Error in reading Sector
+
+    *(uint16_t*) &sector[fatOffset] = value;
+    return diskDriver.writeSector(fatSector, sector);
+}
+
+uint16_t FATDriver::findFreeCluster() {
+    uint8_t sector[512];
+
+    const uint32_t TOTAL_SECTORS = 2880;
+    const uint32_t BYTES_PER_SECTOR = 512;
+
+    for(uint32_t i = 0; i < ((TOTAL_SECTORS * BYTES_PER_SECTOR) / 512); ++i) {
+        if(!diskDriver.readSector(fatStart + i, sector))
+            return 0xFFFF;  // Failed to read Sector
+        
+        for(uint32_t j = 0; j < 512; j += 2) {
+            uint16_t cluster = *(uint16_t*) &sector[j];
+
+            if(cluster == 0) {
+                // Found free Cluster
+                return (i * 256) + (j / 2);
+            }
+        }
+    }
+
+    return 0xFFFF;  // No free Clusters found
 }

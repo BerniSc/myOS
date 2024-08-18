@@ -20,7 +20,8 @@ bool DiskDriver::readSector(uint32_t lba, uint8_t* buffer) {
         return false;
 
     // Send the Command to read a Sector
-    outb(IO_BASE + 0x07, 0xE0 | ((lba >> 24) & 0x0F));
+    //outb(IO_BASE + 0x07, 0xE0 | ((lba >> 24) & 0x0F));
+    outb(IO_BASE + 0x06, 0xE0 | ((lba >> 24) & 0x0F));
     outb(IO_BASE + 0x02, 1);                        // Sector Count
     outb(IO_BASE + 0x03, (uint8_t) lba);            // LBA Low Byte
     outb(IO_BASE + 0x04, (uint8_t) (lba >> 8));     // LBA Mid Byte
@@ -31,6 +32,19 @@ bool DiskDriver::readSector(uint32_t lba, uint8_t* buffer) {
         return false;
     
     readData(buffer, 512);                          // Read 512 Bytes (1 Sector)
+    
+    //io::my_cout << "BOOT SECTOR CONTENT:\n";
+    //for(int i = 0; i < 512; ++i) {
+        //io::my_cout << (int) buffer[i] << "";
+        //if((i + 1) % 32 == 0)
+            //io::my_cout << "\n";
+    //}
+    //io::my_cout << "BSRead C " << lba << ":";
+    //for(int i = 0; i < 32; ++i) {
+        //io::my_cout << (int) buffer[i] << "";
+        ////if((i + 1) % 32 == 0)
+            ////io::my_cout << "\n";
+    //}
 
     return true;
 }
@@ -40,7 +54,8 @@ bool DiskDriver::writeSector(uint32_t lba, const uint8_t* buffer) {
         return false;
 
     // Send the Command to write a Sector
-    outb(IO_BASE + 0x07, 0xE0 | ((lba >> 24) & 0x0F));
+    //outb(IO_BASE + 0x07, 0xE0 | ((lba >> 24) & 0x0F));
+    outb(IO_BASE + 0x06, 0xE0 | ((lba >> 24) & 0x0F));
     outb(IO_BASE + 0x02, 1);                        // Sector Count
     outb(IO_BASE + 0x03, (uint8_t) lba);            // LBA Low Byte
     outb(IO_BASE + 0x04, (uint8_t) (lba >> 8));     // LBA Mid Byte
@@ -51,6 +66,13 @@ bool DiskDriver::writeSector(uint32_t lba, const uint8_t* buffer) {
         return false;
 
     writeData(buffer, 512);                         // Write 512 Bytes (1 Sector)
+
+    //io::my_cout << "BSWrite C " << lba << ":";
+    //for(int i = 0; i < 32; ++i) {
+        //io::my_cout << (int) buffer[i] << "";
+        ////if((i + 1) % 32 == 0)
+            ////io::my_cout << "\n";
+    //}
 
     return true;
 }
