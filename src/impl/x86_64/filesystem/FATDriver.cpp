@@ -184,8 +184,6 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
     if(firstCluster == 0xFFFF)
         return false;   // No Free Clusters available
 
-    io::my_cout << "1\n";
-
     while(remainingSize > 0) {
         uint8_t dataSector[512] = {0};
         size_t bytesToCopy = (remainingSize > 512) ? 512 : remainingSize;
@@ -194,7 +192,6 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
         uint32_t lba = clusterToLBA(currentCluster);
         if(!diskDriver.writeSector(lba, dataSector))
             return false;       // Failed to write Sector
-    io::my_cout << "2\n";
 
         remainingSize -= bytesToCopy;
         data += bytesToCopy;
@@ -203,7 +200,6 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
             uint16_t nextCluster = findFreeCluster();
             if(nextCluster == 0xFFFF)
                 return false;   // No free Clusters available
-    io::my_cout << "3\n";
 
             setNextCluster(currentCluster, nextCluster);
             currentCluster = nextCluster;
@@ -211,7 +207,6 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
     }
 
     setNextCluster(currentCluster, 0xFFFF);     // Mark end of cluster Chain
-    io::my_cout << "4\n";
 
     return createEntryCommon(path, firstCluster, size, 0x20, directoryCluster);   // 0x20: Archive Attribute
 }
@@ -222,10 +217,10 @@ bool FATDriver::createDirectory(const char* name, uint16_t parentCluster)  {
     if(firstCluster == 0xFFFF)
         return false;           // No free Clusters available
 
-        io::my_cout << "STILL HERE\n";
     // Init the directory Cluster
     uint8_t dirSector[512] = {0};
-    if(!diskDriver.writeSector(clusterToLBA(firstCluster), dirSector));
+    uint32_t lba = clusterToLBA(firstCluster);
+    if(!diskDriver.writeSector(lba, dirSector))
         return false;           // Failed to initialize directory Sector
     
     // Create the directory Entry in the specified parent directory
@@ -329,6 +324,7 @@ io::my_cout << "_2\n";
             }
         }
     }
+    io::my_cout << "NO FREE CLUSTERS\n";
 
     return 0xFFFF;  // No free Clusters found
 }
@@ -350,8 +346,11 @@ uint16_t FATDriver::findDirectoryCluster(const char* path) {
         bool found = false;
 
         for(int i = 0; i < sectorsPerCluster; i++) {
-            if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector))
+            if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector)) {
+                io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Failed to read Sector in findDirCluster\n";
+                delete[] token;
                 return 0xFFFF;      // Failed to read Sector
+            }
 
             for(int j = 0; j < 512; j+= 32) {
                 if(sector[j] != 0 && sector[j] != 0xE5 && (sector[j + 11] & 0x10)) {
