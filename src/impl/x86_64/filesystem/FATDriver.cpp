@@ -82,9 +82,8 @@ bool FATDriver::readFile(const char* path, Vector<uint8_t>& buffer) {
                 char entryName[12];
                 kmemcpy(&sector[j], entryName, 11);
                 entryName[11] = '\0';
-
                 // Compare the Entry Name with the requested Field Name
-                if(string_comp(entryName, path) == false) {
+                if(string_comp(entryName, path) == true) {
                     // File Found, Read its Contents
                     uint16_t firstCluster = *(uint16_t*) &sector[j + 26];
                     uint32_t fileSize = *(uint32_t*) &sector[j + 28];
@@ -124,6 +123,7 @@ bool FATDriver::readFile(const char* path, Vector<uint8_t>& buffer) {
             }
         }
     }
+    io::my_cout << "File not Found\n";
     return false;           // File not Found
 }
 
@@ -201,7 +201,7 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size)
     return true;
 }
 
-bool FATDriver::createDirectory(const char* name, uint16_t parentCluster) {
+/*bool FATDriver::createDirectory(const char* name, uint16_t parentCluster) {
     // Find a free Cluster
     uint16_t freeCluster = findFreeCluster();
 
@@ -233,7 +233,7 @@ bool FATDriver::createDirectory(const char* name, uint16_t parentCluster) {
             }
         }
     }
-}
+}*/
 
 uint32_t FATDriver::clusterToLBA(uint32_t cluster) {
     return dataStart + (cluster - 2) * sectorsPerCluster;
