@@ -67,8 +67,8 @@ extern "C" void kernel_main() {
 
     my_interrupt_ctl.enable_interrupts();
 
-    // my_timer.unmask_timer();
-    // sleep(20000);
+    my_timer.unmask_timer();
+    sleep(20000);
 
     io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Press enter to proceed...";
     io::my_cin >> input_buffer;
@@ -105,13 +105,13 @@ extern "C" void kernel_main() {
     if(!fat.initialize()) {
         io::my_cout << "Failed to init FAT\n";
     }
-    //if(!fat.formatDisk()) {
-        //io::my_cout << "Failed to Format Disk\n";
-    //}
+    if(!fat.formatDisk()) {
+        io::my_cout << "Failed to Format Disk\n";
+    }
 
     io::my_cout << "Formatted Disk and set up\n";
-    const char* testFile = "TSTFLTXT2";
-    const uint8_t fileData[] = "Hello, FAT16!";
+    const char* testFile = "TESTFLE.TXT";
+    const uint8_t fileData[] = "Hello, FAAT16! Lol, does this Work\nsss";
     uint32_t fileSize = sizeof(fileData) - 1;   // Exclude 0 Terminator
 
     if(!fat.createFile(testFile, fileData, fileSize))
@@ -124,6 +124,14 @@ extern "C" void kernel_main() {
         delete[] dirEntries[i];
     }
 
+    Vector<uint8_t> fileBuffer;
+
+    if(fat.readFile(testFile, fileBuffer)) {
+        io::my_cout << "File Read : " << testFile << "\n";
+        for(size_t i = 0; i < fileBuffer.size(); ++i)
+            io::my_cout << static_cast<char>(fileBuffer[i]);
+        io::my_cout << io::OSTREAM_APPEND::endl;
+    }
 
     // filesystem::FatFileSystem my_fat_fs;
 //    filesystem::FatFileSystem my_fat_fs;

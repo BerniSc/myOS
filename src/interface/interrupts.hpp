@@ -17,6 +17,7 @@
 
 // Forward Declaration of Function TODO Check
 extern "C" void keyboard_handler_interrupt();
+extern "C" void timer_handler_interrupt();
 extern "C" void load_interrupt_data_table(void*);
 
 struct interrupt_controller {

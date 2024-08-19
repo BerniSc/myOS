@@ -8,6 +8,9 @@
 #define PIT_FREQ 1193182
 #define TIMER_FREQ 100
 
+extern "C" void timer_interrupt_handler_isr();
+extern "C" void timer_handler_interrupt();
+
 extern volatile uint32_t ticks;
 
 struct Timer {
@@ -16,7 +19,5 @@ struct Timer {
     void unmask_timer();
 };
 
-extern "C" void timer_interrupt_handler_isr();
-extern "C" void timer_handler_interrupt();
 
 #endif
