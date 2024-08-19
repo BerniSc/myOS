@@ -2,8 +2,8 @@
 #define FATDRIVER_HPP
 
 #include "DiskDriver.hpp"
-#include "vector.hpp"
 
+#include "vector.hpp"
 #include <cstdint>
 
 class FATDriver {
@@ -16,7 +16,8 @@ class FATDriver {
         Vector<char*> listDirectory(const char* path);
         bool readFile(const char* path, Vector<uint8_t>& buffer);
 
-        bool createFile(const char* path, const uint8_t* data, uint32_t size);
+        uint16_t findDirectoryCluster(const char* path);
+        bool createFile(const char* path, const uint8_t* data, uint32_t size, uint16_t directoryCluster);
         bool createDirectory(const char* name, uint16_t parentCluster);
     
     private:
@@ -28,6 +29,8 @@ class FATDriver {
         uint16_t getNextCluster(uint16_t cluster);
         bool setNextCluster(uint16_t cluster, uint16_t value);
         uint16_t findFreeCluster();
+
+        bool createEntryCommon(const char* name, uint16_t firstCluster, uint32_t size, uint8_t attributes, uint16_t directoryCluster);
 
         DiskDriver& diskDriver;
         uint32_t fatStart;

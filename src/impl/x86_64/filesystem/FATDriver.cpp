@@ -1,6 +1,8 @@
 #include "FATDriver.hpp"
+
 #include "utils.hpp"
 #include "memory_manager.hpp"
+#include "tokenizer.hpp"
 
 FATDriver::FATDriver(DiskDriver& diskDriver) : diskDriver(diskDriver) {
 
@@ -127,15 +129,20 @@ bool FATDriver::readFile(const char* path, Vector<uint8_t>& buffer) {
     return false;           // File not Found
 }
 
-bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size) {
+bool FATDriver::createEntryCommon(const char* name, uint16_t firstCluster, uint32_t size, uint8_t attributes, uint16_t directoryCluster) {
     uint8_t sector[512];
-    uint32_t rootDirSector = rootDirStart;
+    uint32_t directorySector;
+    if(directoryCluster != 0xFFFF)
+        directorySector = clusterToLBA(directoryCluster);
+    else
+        directorySector = rootDirStart;
+    // directorySector = rootDirStart;
     bool found = false;
     int freeEntryOffset = -1;
 
     // Search for a free Dir-Entry in the Root Dir
-    for(uint32_t i = 0; i < rootDirSectors; ++i) {
-        if(!diskDriver.readSector(rootDirSector + i, sector))
+    for(uint32_t i = 0; i < sectorsPerCluster; i++) {
+        if(!diskDriver.readSector(directorySector + i, sector))
             return false;       // Failed to read Sector
 
         for(int j = 0; j < 512; j += 32) {
@@ -154,14 +161,30 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size)
     if(!found)
         return false;       // No free Directory-Entry found
 
+    // Create a dir-entry
+    kmemset(&sector[freeEntryOffset], 0, 32);
+    kmemcpy(name, &sector[freeEntryOffset], 11);
+    sector[freeEntryOffset + 11] = attributes;        // File Attribute: Archive or Directory
+    *(uint16_t*) &sector[freeEntryOffset + 26] = firstCluster;
+    *(uint32_t*) &sector[freeEntryOffset + 28] = size;
+
+    // Write updated dir-sector back to the disk
+    if(!diskDriver.writeSector(directorySector + (freeEntryOffset / 512), sector))
+        return false;       // Failed to write Sector
+    
+    return true;
+}
+
+bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size, uint16_t directoryCluster) {
     // Find free clusters and write Data to them
     uint32_t remainingSize = size;
     uint16_t firstCluster = findFreeCluster();
     uint16_t currentCluster = firstCluster;
-    uint16_t prevCluster = 0;
 
     if(firstCluster == 0xFFFF)
         return false;   // No Free Clusters available
+
+    io::my_cout << "1\n";
 
     while(remainingSize > 0) {
         uint8_t dataSector[512] = {0};
@@ -171,6 +194,7 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size)
         uint32_t lba = clusterToLBA(currentCluster);
         if(!diskDriver.writeSector(lba, dataSector))
             return false;       // Failed to write Sector
+    io::my_cout << "2\n";
 
         remainingSize -= bytesToCopy;
         data += bytesToCopy;
@@ -179,6 +203,7 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size)
             uint16_t nextCluster = findFreeCluster();
             if(nextCluster == 0xFFFF)
                 return false;   // No free Clusters available
+    io::my_cout << "3\n";
 
             setNextCluster(currentCluster, nextCluster);
             currentCluster = nextCluster;
@@ -186,54 +211,26 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size)
     }
 
     setNextCluster(currentCluster, 0xFFFF);     // Mark end of cluster Chain
+    io::my_cout << "4\n";
 
-    // Create a dir-entry
-    kmemset(&sector[freeEntryOffset], 0, 32);
-    kmemcpy(path, &sector[freeEntryOffset], 11);
-    sector[freeEntryOffset + 11] = 0x20;        // File Attribute: Archive
-    *(uint16_t*) &sector[freeEntryOffset + 26] = firstCluster;
-    *(uint32_t*) &sector[freeEntryOffset + 28] = size;
-
-    // Write updated dir-sector back to the disk
-    if(!diskDriver.writeSector(rootDirSector + (freeEntryOffset / 512), sector))
-        return false;       // Failed to write Sector
-    
-    return true;
+    return createEntryCommon(path, firstCluster, size, 0x20, directoryCluster);   // 0x20: Archive Attribute
 }
 
-/*bool FATDriver::createDirectory(const char* name, uint16_t parentCluster) {
-    // Find a free Cluster
-    uint16_t freeCluster = findFreeCluster();
+bool FATDriver::createDirectory(const char* name, uint16_t parentCluster)  {
+    // Allocate a Cluster for the Directory
+    uint16_t firstCluster = findFreeCluster();
+    if(firstCluster == 0xFFFF)
+        return false;           // No free Clusters available
 
-    if(freeCluster == 0xFFFF)
-        return false;       // No free Clusters Found
-
-    // Init the directory cluster
-    uint8_t sector[512] = {0};
-    if(!diskDriver.writeSector(dataStart + (freeCluster - 2) * sectorsPerCluster, sector))
-        return false;       // Failed to write directory Sector
+        io::my_cout << "STILL HERE\n";
+    // Init the directory Cluster
+    uint8_t dirSector[512] = {0};
+    if(!diskDriver.writeSector(clusterToLBA(firstCluster), dirSector));
+        return false;           // Failed to initialize directory Sector
     
-    // Create a directory-Entry in the parent Directory
-    // For now assume the parentCluster points to the parent-dirs first cluster
-    uint16_t parentSector = dataStart + (parentCluster - 2) * sectorsPerCluster;
-    for(uint32_t i = 0; i < sectorsPerCluster; ++i) {
-        if(!diskDriver.readSector(parentSector + i, sector))
-            return false;   // Failed to read parent directory sector
-        
-        for(uint32_t j = 0; j < 512; ++j) {
-            // Check for Empty or deleted Entry
-            if(sector[j] == 0x00 || sector[j] = 0xE5) {
-                // Fill the dir-entry
-                kmemset(&sector[j], 0, 32);
-                kmemcpy(name, &sector[j], 12);  // Copy the Name into the Sector
-                sector[j + 11] = 0x10;          // Set Attribute to directory
-                *(uint16_t*) &sector[j + 26] = freeCluster;
-
-                // TODO - Finish / combine with File
-            }
-        }
-    }
-}*/
+    // Create the directory Entry in the specified parent directory
+    return createEntryCommon(name, firstCluster, 0, 0x10, parentCluster);  // Size: 0; 0x10 = Directory Attribute
+}
 
 uint32_t FATDriver::clusterToLBA(uint32_t cluster) {
     return dataStart + (cluster - 2) * sectorsPerCluster;
@@ -318,8 +315,10 @@ uint16_t FATDriver::findFreeCluster() {
     const uint32_t BYTES_PER_SECTOR = 512;
 
     for(uint32_t i = 0; i < ((TOTAL_SECTORS * BYTES_PER_SECTOR) / 512); ++i) {
+io::my_cout << "_1\n";
         if(!diskDriver.readSector(fatStart + i, sector))
             return 0xFFFF;  // Failed to read Sector
+io::my_cout << "_2\n";
         
         for(uint32_t j = 0; j < 512; j += 2) {
             uint16_t cluster = *(uint16_t*) &sector[j];
@@ -332,4 +331,45 @@ uint16_t FATDriver::findFreeCluster() {
     }
 
     return 0xFFFF;  // No free Clusters found
+}
+
+// Split the Path and Traverse it to find a specific Cluster
+uint16_t FATDriver::findDirectoryCluster(const char* path) {
+    // TODO Fix
+    // For now assue path is split unix-esque using "DIR1/DIR2"
+    uint16_t currentCluster = rootDirStart;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
+    uint8_t sector[512];
+
+    if(string_comp(path, "/"))
+        return static_cast<uint16_t>(rootDirStart);
+
+    Tokenizer tokenizer(path, '/');
+    const char* token;
+
+    while((token = tokenizer.nextToken()) != nullptr) {
+        bool found = false;
+
+        for(int i = 0; i < sectorsPerCluster; i++) {
+            if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector))
+                return 0xFFFF;      // Failed to read Sector
+
+            for(int j = 0; j < 512; j+= 32) {
+                if(sector[j] != 0 && sector[j] != 0xE5 && (sector[j + 11] & 0x10)) {
+                    // Compare the directoryName
+                    if(string_comp((char*) &sector[j], token)) {
+                        currentCluster = *(uint16_t*) &sector[j + 26];
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if(found)
+                break;
+        }
+        delete[] token;
+
+        if(!found)
+            return 0xFFFF;  // Directory not found
+    }   
+    return currentCluster;
 }
