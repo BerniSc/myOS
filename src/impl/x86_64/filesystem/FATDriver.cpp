@@ -49,7 +49,7 @@ Vector<char*> FATDriver::listDirectory(const char* path) {
 
     // Find the cluster for the specified Dir
     uint16_t dirCluster = findDirectoryCluster(path);
-    if(dirCluster = 0xFFFF && !string_comp(path, "/")) {
+    if(dirCluster == 0xFFFF && !string_comp(path, "/")) {
         io::my_cout << "Directory for lsdir " << path << " not found\n";
         return entries; // Dir not Found
     }
@@ -71,6 +71,7 @@ Vector<char*> FATDriver::listDirectory(const char* path) {
                 return entries;     // No More entries
             
             if(sector[j] != 0xE5 && (sector[j + 11] & 0x08) == 0) {     // Check if its a valid entry
+                //io::my_cout << sector[j + 11] << " || " << 0x01 << "\n";
                 char* entryName = new char[12];
                 kmemcpy(&sector[j], entryName, 11);
                 entryName[11] = '\0';
@@ -144,6 +145,7 @@ bool FATDriver::readFile(const char* path, Vector<uint8_t>& buffer) {
 }
 
 bool FATDriver::createEntryCommon(const char* name, uint16_t firstCluster, uint32_t size, uint8_t attributes, uint16_t directoryCluster) {
+    io::my_cout << "Adding Attrbitues: " << attributes << "\n";
     uint8_t sector[512];
     uint32_t directorySector;
     if(directoryCluster != 0xFFFF)
@@ -363,7 +365,7 @@ uint16_t FATDriver::findFreeCluster() {
 
 // Split the Path and Traverse it to find a specific Cluster
 uint16_t FATDriver::findDirectoryCluster(const char* path) {
-    io::my_cout << "ENTER HERE\n";
+    //io::my_cout << "ENTER HERE\n";
     // TODO Fix
     // For now assue path is split unix-esque using "DIR1/DIR2"
     uint16_t currentCluster = rootDirStart;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
@@ -379,17 +381,24 @@ uint16_t FATDriver::findDirectoryCluster(const char* path) {
         bool found = false;
 
         for(int i = 0; i < sectorsPerCluster; i++) {
-            if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector)) {
+            //if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector)) {
+            if(!diskDriver.readSector((currentCluster) + i, sector)) {
                 io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Failed to read Sector in findDirCluster\n";
                 delete[] token;
                 return 0xFFFF;      // Failed to read Sector
             }
 
+            //io::my_cout << "Sector " << (clusterToLBA(currentCluster) + i) << " read Successfully\n";
+
             for(int j = 0; j < 512; j+= 32) {
+                // io::my_cout << "WAS HERE " << static_cast<int>(sector[j]) << "-" << 0xE5 << "  " << static_cast<int>(sector[j + 11]) << " " << (sector[j + 11] & 0x10) << "\n";
                 if(sector[j] != 0 && sector[j] != 0xE5 && (sector[j + 11] & 0x10)) {
                     // Compare the directoryName
-                    io::my_cout << "FIND " << token << "    " << path << "\n";
-                    if(string_comp((char*) &sector[j], token)) {
+                    //io::my_cout << "FIND " << token << "    " << path << "\n";
+                    char entryName[12] = {0};
+                    kmemcpy(&sector[j], entryName, 11);
+                    entryName[11] = '\0';
+                    if(string_comp(entryName, token)) {
                         currentCluster = *(uint16_t*) &sector[j + 26];
                         found = true;
                         io::my_cout << "FOUND " << token << "    " << path << "\n";

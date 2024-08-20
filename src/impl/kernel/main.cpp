@@ -68,7 +68,7 @@ extern "C" void kernel_main() {
     my_interrupt_ctl.enable_interrupts();
 
     my_timer.unmask_timer();
-    sleep(20000);
+    sleep(200);
 
     io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Press enter to proceed...";
     io::my_cin >> input_buffer;
@@ -114,7 +114,13 @@ extern "C" void kernel_main() {
     const uint8_t fileData[] = "Hello, FAAT16! Lol, does this Work\nsss";
     uint32_t fileSize = sizeof(fileData) - 1;   // Exclude 0 Terminator
 
-    if(!fat.createFile(testFile, fileData, fileSize))
+    if(!fat.createDirectory("TESTDIR", 0xFFFF))
+        io::my_cout << "Failed to create Dir\n";
+        
+    if(!fat.createFile(testFile, fileData, fileSize, 0xFFFF))
+        io::my_cout << "Failed to create File\n";
+
+    if(!fat.createFile(testFile, fileData, fileSize, fat.findDirectoryCluster("TESTDIR")));
         io::my_cout << "Failed to create File\n";
 
     io::my_cout << "========\n";
@@ -123,7 +129,13 @@ extern "C" void kernel_main() {
         io::my_cout << dirEntries[i] << "\n";
         delete[] dirEntries[i];
     }
-
+    io::my_cout << "========\n";
+    dirEntries = fat.listDirectory("TESTDIR");
+    for(size_t i = 0; i < dirEntries.size(); ++i) {
+        io::my_cout << dirEntries[i] << "\n";
+        delete[] dirEntries[i];
+    }
+    io::my_cout << "\n=)(=\n";
     Vector<uint8_t> fileBuffer;
 
     if(fat.readFile(testFile, fileBuffer)) {
