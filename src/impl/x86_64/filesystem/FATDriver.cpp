@@ -47,9 +47,23 @@ Vector<char*> FATDriver::listDirectory(const char* path) {
     Vector<char*> entries;
     uint8_t sector[512];
 
-    // TODO For Simplicity now only list Root Dir
-    for(uint32_t i = 0; i < rootDirSectors; ++i) {
-        if(!diskDriver.readSector(rootDirStart + i, sector))
+    // Find the cluster for the specified Dir
+    uint16_t dirCluster = findDirectoryCluster(path);
+    if(dirCluster = 0xFFFF && !string_comp(path, "/")) {
+        io::my_cout << "Directory for lsdir " << path << " not found\n";
+        return entries; // Dir not Found
+    }
+
+    // Determine if we are listing RootDir -> Has To be treated differently as we (FOR NOW) store it as LBA and not cluster
+    bool isRootDir = string_comp(path, "/");
+
+    // Calculate the starting LBA for the Dir
+    uint32_t startLBA = isRootDir ? rootDirStart : clusterToLBA(dirCluster);
+    uint32_t sectorsToRead = isRootDir ? rootDirSectors : sectorsPerCluster;
+
+    // Read the directory Entries
+    for(uint32_t i = 0; i < sectorsToRead; ++i) {
+        if(!diskDriver.readSector(startLBA + i, sector))
             continue;
         
         for(int j = 0; j < 512; j += 32) {
@@ -219,6 +233,26 @@ bool FATDriver::createDirectory(const char* name, uint16_t parentCluster)  {
 
     // Init the directory Cluster
     uint8_t dirSector[512] = {0};
+    kmemset(dirSector, 0, 512);
+
+    // Create "." Entry
+    const char* currentDirName = ".          ";
+    char currentBuffer[11] = {0};
+    for(int i = 0; i < 11; i++)
+        currentBuffer[i] = currentDirName[i];
+    kmemcpy(dirSector, currentBuffer, 11);
+    dirSector[11] = 0x10;           // Directory Attribute
+    *(uint16_t*) &dirSector[26] = firstCluster;
+
+    // Create ".." Entry
+    const char* parentDirName = "..         ";
+    char parentBuffer[11] = {0};
+    for(int i = 0; i < 11; i++)
+        parentBuffer[i] = parentDirName[i];
+    kmemcpy(&dirSector[32], parentBuffer, 11);
+    dirSector[43] = 0x10;           // Directory Attribute
+    *(uint16_t*) &dirSector[58] = parentCluster != 0xFFFF ? parentCluster : rootDirStart;
+
     uint32_t lba = clusterToLBA(firstCluster);
     if(!diskDriver.writeSector(lba, dirSector))
         return false;           // Failed to initialize directory Sector
@@ -310,10 +344,8 @@ uint16_t FATDriver::findFreeCluster() {
     const uint32_t BYTES_PER_SECTOR = 512;
 
     for(uint32_t i = 0; i < ((TOTAL_SECTORS * BYTES_PER_SECTOR) / 512); ++i) {
-io::my_cout << "_1\n";
         if(!diskDriver.readSector(fatStart + i, sector))
             return 0xFFFF;  // Failed to read Sector
-io::my_cout << "_2\n";
         
         for(uint32_t j = 0; j < 512; j += 2) {
             uint16_t cluster = *(uint16_t*) &sector[j];
@@ -331,6 +363,7 @@ io::my_cout << "_2\n";
 
 // Split the Path and Traverse it to find a specific Cluster
 uint16_t FATDriver::findDirectoryCluster(const char* path) {
+    io::my_cout << "ENTER HERE\n";
     // TODO Fix
     // For now assue path is split unix-esque using "DIR1/DIR2"
     uint16_t currentCluster = rootDirStart;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
@@ -355,9 +388,11 @@ uint16_t FATDriver::findDirectoryCluster(const char* path) {
             for(int j = 0; j < 512; j+= 32) {
                 if(sector[j] != 0 && sector[j] != 0xE5 && (sector[j + 11] & 0x10)) {
                     // Compare the directoryName
+                    io::my_cout << "FIND " << token << "    " << path << "\n";
                     if(string_comp((char*) &sector[j], token)) {
                         currentCluster = *(uint16_t*) &sector[j + 26];
                         found = true;
+                        io::my_cout << "FOUND " << token << "    " << path << "\n";
                         break;
                     }
                 }
@@ -367,8 +402,11 @@ uint16_t FATDriver::findDirectoryCluster(const char* path) {
         }
         delete[] token;
 
-        if(!found)
+        if(!found) {
+            io::my_cout << "REALLY NOT FOUND\n";
             return 0xFFFF;  // Directory not found
+        }
     }   
+    io::my_cout << "DID FIND\n";
     return currentCluster;
 }
