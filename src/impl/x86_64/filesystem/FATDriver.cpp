@@ -62,7 +62,7 @@ Vector<char*> FATDriver::listDirectory(const char* path) {
     uint32_t sectorsToRead = isRootDir ? rootDirSectors : sectorsPerCluster;
 
     // Read the directory Entries
-    for(uint32_t i = 0; i < sectorsToRead; ++i) {
+    for(uint32_t i = 0; i < sectorsToRead; i++) {
         if(!diskDriver.readSector(startLBA + i, sector))
             continue;
         
@@ -76,6 +76,9 @@ Vector<char*> FATDriver::listDirectory(const char* path) {
                 kmemcpy(&sector[j], entryName, 11);
                 entryName[11] = '\0';
                 entries.pushBack(entryName);
+                char* buffer = new char[5];
+                itoa(sector[j + 11], buffer);
+                entries.pushBack(buffer);
             }
         }
     }
@@ -187,6 +190,7 @@ bool FATDriver::createEntryCommon(const char* name, uint16_t firstCluster, uint3
     // Write updated dir-sector back to the disk
     if(!diskDriver.writeSector(directorySector + (freeEntryOffset / 512), sector))
         return false;       // Failed to write Sector
+    //io::my_cout << "__3_entry_true__\n";
     
     return true;
 }
@@ -199,7 +203,7 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
 
     if(firstCluster == 0xFFFF)
         return false;   // No Free Clusters available
-
+    
     while(remainingSize > 0) {
         uint8_t dataSector[512] = {0};
         size_t bytesToCopy = (remainingSize > 512) ? 512 : remainingSize;
@@ -217,12 +221,17 @@ bool FATDriver::createFile(const char* path, const uint8_t* data, uint32_t size,
             if(nextCluster == 0xFFFF)
                 return false;   // No free Clusters available
 
-            setNextCluster(currentCluster, nextCluster);
+            if(!setNextCluster(currentCluster, nextCluster))
+                return false;   // Failed to set next Cluster
             currentCluster = nextCluster;
         }
     }
 
-    setNextCluster(currentCluster, 0xFFFF);     // Mark end of cluster Chain
+    // Mark end of Clusterchain
+    if(!setNextCluster(currentCluster, 0xFFFF))
+        return false;;     // Failed to Mark end of Clusterchain
+
+    //io::my_cout << "__4_not_returned_yet\n";
 
     return createEntryCommon(path, firstCluster, size, 0x20, directoryCluster);   // 0x20: Archive Attribute
 }
@@ -242,6 +251,7 @@ bool FATDriver::createDirectory(const char* name, uint16_t parentCluster)  {
     char currentBuffer[11] = {0};
     for(int i = 0; i < 11; i++)
         currentBuffer[i] = currentDirName[i];
+    currentBuffer[11] = '0';
     kmemcpy(dirSector, currentBuffer, 11);
     dirSector[11] = 0x10;           // Directory Attribute
     *(uint16_t*) &dirSector[26] = firstCluster;
@@ -251,9 +261,10 @@ bool FATDriver::createDirectory(const char* name, uint16_t parentCluster)  {
     char parentBuffer[11] = {0};
     for(int i = 0; i < 11; i++)
         parentBuffer[i] = parentDirName[i];
+    parentBuffer[11] = '0';
     kmemcpy(&dirSector[32], parentBuffer, 11);
     dirSector[43] = 0x10;           // Directory Attribute
-    *(uint16_t*) &dirSector[58] = parentCluster != 0xFFFF ? parentCluster : rootDirStart;
+    *(uint16_t*) &dirSector[58] = parentCluster != 0xFFFF ? parentCluster : 0;
 
     uint32_t lba = clusterToLBA(firstCluster);
     if(!diskDriver.writeSector(lba, dirSector))
@@ -365,24 +376,25 @@ uint16_t FATDriver::findFreeCluster() {
 
 // Split the Path and Traverse it to find a specific Cluster
 uint16_t FATDriver::findDirectoryCluster(const char* path) {
-    //io::my_cout << "ENTER HERE\n";
-    // TODO Fix
-    // For now assue path is split unix-esque using "DIR1/DIR2"
-    uint16_t currentCluster = rootDirStart;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
-    uint8_t sector[512];
-
     if(string_comp(path, "/"))
         return static_cast<uint16_t>(rootDirStart);
 
+    //io::my_cout << "ENTER HERE\n";
+    // TODO Fix
+    // For now assue path is split unix-esque using "DIR1/DIR2"
     Tokenizer tokenizer(path, '/');
     const char* token;
+
+    uint16_t currentCluster = rootDirStart;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
+    currentCluster = 0;     // Start from the Root Directory. Thats not REALLY efficient. TODO Refactor later
+    uint8_t sector[512];
 
     while((token = tokenizer.nextToken()) != nullptr) {
         bool found = false;
 
         for(int i = 0; i < sectorsPerCluster; i++) {
             //if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector)) {
-            if(!diskDriver.readSector((currentCluster) + i, sector)) {
+            if(!diskDriver.readSector(clusterToLBA(currentCluster) + i, sector)) {
                 io::my_cout(io::COLOUR_LIGHT_BLUE, io::COLOUR_LIGHT_GRAY) << "Failed to read Sector in findDirCluster\n";
                 delete[] token;
                 return 0xFFFF;      // Failed to read Sector

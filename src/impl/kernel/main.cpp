@@ -114,14 +114,23 @@ extern "C" void kernel_main() {
     const uint8_t fileData[] = "Hello, FAAT16! Lol, does this Work\nsss";
     uint32_t fileSize = sizeof(fileData) - 1;   // Exclude 0 Terminator
 
-    if(!fat.createDirectory("TESTDIR", 0xFFFF))
-        io::my_cout << "Failed to create Dir\n";
-        
     if(!fat.createFile(testFile, fileData, fileSize, 0xFFFF))
         io::my_cout << "Failed to create File\n";
 
-    if(!fat.createFile(testFile, fileData, fileSize, fat.findDirectoryCluster("TESTDIR")));
+    if(!fat.createFile("ROFL", fileData, fileSize, 0xFFFF))
         io::my_cout << "Failed to create File\n";
+
+    if(!fat.createDirectory("TESTDIR", 0xFFFF))
+        io::my_cout << "Failed to create Dir\n";
+
+    io::my_cout << "CLEAR STUFF\n";
+
+    const uint8_t otherData[] = "hiii";
+    if(fat.createFile("KIK", otherData, sizeof(otherData) - 1, fat.findDirectoryCluster("TESTDIR")))
+        io::my_cout << "Failed to create File KIK\n";
+
+    if(fat.createFile(testFile, fileData, sizeof(fileData) - 1, fat.findDirectoryCluster("TESTDIR")))
+        io::my_cout << "Failed to create File KIK\n";
 
     io::my_cout << "========\n";
     Vector<char*> dirEntries = fat.listDirectory("/");
@@ -137,6 +146,13 @@ extern "C" void kernel_main() {
     }
     io::my_cout << "\n=)(=\n";
     Vector<uint8_t> fileBuffer;
+
+    if(fat.readFile(testFile, fileBuffer)) {
+        io::my_cout << "File Read : " << testFile << "\n";
+        for(size_t i = 0; i < fileBuffer.size(); ++i)
+            io::my_cout << static_cast<char>(fileBuffer[i]);
+        io::my_cout << io::OSTREAM_APPEND::endl;
+    }
 
     if(fat.readFile(testFile, fileBuffer)) {
         io::my_cout << "File Read : " << testFile << "\n";
